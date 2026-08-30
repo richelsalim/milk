@@ -49,3 +49,14 @@
 | lgbm_rhl3 | 0.5963 | 0.6600 | 0.5326 | 164 | 2780 | full | v2.0 recency grid |
 | lgbm_rhl7 | 0.5995 | 0.6650 | 0.5340 | 129 | 2806 | full | v2.0 recency grid |
 | din_pos | 0.6045 | 0.6718 | 0.5373 | 299 | 5338 | full_seqpos | v2.1 positive-history attention |
+| blend3_fdp | 0.6071 | 0.6746 | 0.5397 | 307 | 2404 | full | v2.2 candidate |
+| blend3_fpp | 0.6055 | 0.6728 | 0.5383 | 317 | 2654 | full | v2.2 candidate |
+| blend3_dpp | 0.6059 | 0.6729 | 0.5388 | 318 | 3142 | full | v2.2 candidate |
+| blend2_dp | 0.6075 | 0.6751 | 0.5399 | 297 | 2830 | full | v2.2 candidate (pair + grid) |
+| blend2_dp42 | 0.6075 | 0.6751 | 0.5399 | 297 | 3084 | full | v2.2 refinement |
+| blend | 0.6060 | 0.6735 | 0.5386 | 306 | 2820 | full |  |
+| blend | 0.6064 | 0.6740 | 0.5388 | 311 | 3036 | full |  |
+| blend | 0.6075 | 0.6751 | 0.5399 | 303 | 3038 | full |  |
+| blend_p1 | 0.6075 | 0.6751 | 0.5399 | 261 | 3058 | full | v2.2 epoch-pinned |
+| blend_p2 | 0.6069 | 0.6743 | 0.5395 | 300 | 3255 | full | v2.2 epoch-pinned |
+| blend | 0.6075 | 0.6751 | 0.5399 | 259 | 2983 | full |  |

@@ -84,3 +84,14 @@ Running log of decisions made without confirmation (IMPLEMENTATION.md section 0)
 - **Recency grid None cells** reuse the fresh v2.0 ple bench and v1's lgbm_pointwise row — the
   knob-off code path is byte-identical (unit-tested determinism), so re-benching None would
   duplicate rows.
+
+### 2026-08-30 phase V2.2
+- **din_pos substitute candidate**: the guide's {deepfm, ple, din_pos} set was conditional on
+  din_pos earning it (it did not, 0.6045); substituted {deepfm, ple, ple(seed+1)} to still test
+  a third-base shape. All three-base sets lost to the pair — details in reports/v2.md.
+- **Wall-clock nondeterminism**: identical blend config+seed returned 0.6060-0.6075 across runs
+  because mid-epoch deadline cuts are machine-speed dependent. Registry blend now pins per-base
+  epoch caps inside its shares (all stops label-driven); deadline kept as a safety net. Single
+  full-budget models are unaffected in practice (they patience-stop before the deadline).
+- **fm-in-blend**: fm consumes the fm5 spec but a blend runs one spec; FMRec gained a `fields`
+  column-subset config (5 id_ fields on `full`) rather than teaching Blend per-base specs.

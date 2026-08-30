@@ -192,9 +192,9 @@ Phase V2.1: positive-history attention
 - [x] reports/v2.md section; pushed, tagged v2-phase-1
 
 Phase V2.2: blend v2
-- [ ] three-base candidates benched within one 300 s budget; weight grid on validation
-- [ ] blend default updated to the best found (numbers in zoo_baselines.md + v2.md)
-- [ ] reports/v2.md section; pushed, tagged v2-phase-2
+- [x] three-base candidates benched within one 300 s budget; weight grid on validation
+- [x] blend default updated to the best found (numbers in zoo_baselines.md + v2.md)
+- [x] reports/v2.md section; pushed, tagged v2-phase-2
 
 Phase V2.3: scored run + deliverables
 - [ ] preflight green (verify, pytest, clean main)
