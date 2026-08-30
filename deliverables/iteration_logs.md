@@ -40,9 +40,23 @@ loop, NaN outputs, and an equal-score decision — ran against the real harness:
 
 **Manual interventions: 0** (`runs/scripted/resources.json`).
 
-## Where the scored run's logs will land
+## The scored autonomous run: `aug30`
 
-The scored autonomous run (kickoff message in IMPLEMENTATION.md Appendix C; staged by
-IMPLEMENTATION_V2.md) produces the same ledger under `runs/<tag>/` on branch
-`autoresearch/<tag>`, rendered by `python -m harness report --run-id <tag>`. This file
-then points at that run.
+The first scored run executed on 2026-08-30 (kickoff per IMPLEMENTATION.md Appendix C;
+branch `autoresearch/aug30`, one commit per iteration, ledger also merged to main):
+
+- Raw ledger: [`runs/aug30/`](../runs/aug30/) — per-iteration hypothesis.md,
+  diff.patch, metrics.json, events.jsonl, config.json, plus notes.md (the agent's
+  reflection after every iteration) and resources.json.
+- Results table: [`results.tsv`](../results.tsv) — 5 scored iterations: baseline
+  reproduced at 0.6016, diverse snapshot blend KEPT at **0.6075 (+0.0059)**, then
+  three mechanism-backed follow-ups (ple aux-head pruning, deepfm dim 24, video x tab
+  cross) each REVERTED by the harness at -0.0008/-0.0012/-0.0016 vs best.
+- Rendered, judge-facing view: [`reports/aug30/`](../reports/aug30/) —
+  iteration_log.md (hypothesis → diff → metrics → events per iteration),
+  results_table.md, resources.md, trajectory.png.
+- Stop: `STOP <converged>` under the shipped ε = 0.002 / N = 3 rule after the
+  post-blend window read [-0.0008, -0.0012, -0.0016].
+
+**Manual interventions: 0** (`runs/aug30/resources.json`; no interventions.jsonl
+entries — no human message arrived during the run).

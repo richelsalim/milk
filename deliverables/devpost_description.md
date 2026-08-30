@@ -1,7 +1,7 @@
 # Devpost project description (Deliverable 1 — paste-ready)
 
-**Headline: +0.0055 validation primary over the official FM baseline (+0.0069 GAUC,
-+0.0041 nDCG@5) on KuaiRand-Pure — CPU-only, inside a 300 s training budget, with a
+**Headline: +0.0059 validation primary over the official FM baseline (+0.0077 GAUC,
++0.0042 nDCG@5) on KuaiRand-Pure — CPU-only, inside a 300 s training budget, with a
 fully autonomous, auditable research loop (0 manual interventions in rehearsal).**
 
 ## How the solution addresses the problem statement
@@ -32,7 +32,7 @@ exactly once per iteration, and stops on the pinned convergence rule (ε = 0.002
 N = 3), the 50-iteration cap, or the 6 h ceiling. Reproduction of the official
 baseline is exact (validation primary 0.6016), and the environment's current
 validation-best — a budget-feasible weighted rank-average of DeepFM and PLE — reaches
-**0.6071 (+0.0055)** within a single 300 s CPU budget.
+**0.6075 (+0.0059)** within a single 300 s CPU budget.
 
 Robustness is tested adversarially, not asserted: a scripted 9-step agent rehearsal
 (deliberate syntax error, infinite loop, NaN scores, equal-score decisions,

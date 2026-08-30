@@ -1,0 +1,26 @@
+{
+ "iter": 1,
+ "attempt": 1,
+ "seeds": [
+  0
+ ],
+ "primary": 0.6016148563428039,
+ "gauc": 0.6674096276647994,
+ "ndcg5": 0.5358200850208082,
+ "per_seed": [
+  {
+   "gauc": 0.6674096276647994,
+   "ndcg5": 0.5358200850208082,
+   "primary": 0.6016148563428039
+  }
+ ],
+ "train_sec": 46.0,
+ "total_sec": 46.0,
+ "peak_rss_mb": 824.5,
+ "n_val": 124909,
+ "n_test": 170588,
+ "decision": "keep",
+ "best_before": null,
+ "delta_vs_best": 1.4856342803848399e-05,
+ "delta_vs_baseline": 1.4856342803848399e-05
+}

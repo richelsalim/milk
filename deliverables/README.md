@@ -1,16 +1,17 @@
 # Deliverables — Autonomous ML Research Agent for Recommender Systems (KuaiRand-Pure)
 
-> ## +0.0055 validation primary over the official baseline — before the first scored autonomous run
+> ## +0.0059 validation primary over the official baseline — from the first scored autonomous run
 >
 > | | GAUC | nDCG@5 | **primary** |
 > |---|---|---|---|
 > | official FM baseline (validation) | 0.6674 | 0.5357 | 0.6016 |
-> | **this repo, validation-best (blend)** | **0.6743** | **0.5398** | **0.6071** |
-> | **absolute delta** (the judging formula: mean of per-metric deltas) | **+0.0069** | **+0.0041** | **+0.0055** |
+> | **this repo, validation-best (run aug30, blend)** | **0.6751** | **0.5399** | **0.6075** |
+> | **absolute delta** (the judging formula: mean of per-metric deltas) | **+0.0077** | **+0.0042** | **+0.0059** |
 >
 > That is ~7× the baseline's 5-seed noise (σ = 0.0008) and 2.75× the convergence
 > threshold (ε = 0.002), reached inside one 300 s CPU-only training budget. The ladder:
-> random 0.4827 → item popularity 0.5807 → official FM 0.6016 → **ours 0.6071**.
+> random 0.4827 → item popularity 0.5807 → official FM 0.6016 → **ours 0.6075**.
+> Converged autonomous run: 5 scored iterations, 2 kept, **0 manual interventions**.
 > Bonus benchmark readiness: the same pipeline runs KuaiRand-1k end to end
 > (lgbm_lambdarank validation primary 0.6573; no official 1k baseline is published).
 
@@ -29,7 +30,7 @@ links back to a tracked report or ledger produced by the build's gated phases.
 
 ## How this scores against the judging criteria
 
-- **Technical Execution (35%)** — Primary metric: validation-best +0.0055 over baseline
+- **Technical Execution (35%)** — Primary metric: validation-best +0.0059 over baseline
   (table above); the hidden test is scored once on `final.csv`. Robustness: a watchdog
   with hard timeout and RSS caps, typed failure events (error/timeout/oom/nan/shape/missing),
   3-attempt retry then abandon, divergence warnings — proven by a 9-step scripted
@@ -53,9 +54,11 @@ links back to a tracked report or ledger produced by the build's gated phases.
 
 ## Status and what comes next
 
-The environment is released at tag `v1.0`: every phase gate of IMPLEMENTATION.md is
-green (baseline parity to ±0.0001, 40-test suite, scripted rehearsals, deterministic
-zoo). The scored autonomous run — where the agent iterates from the reproduced baseline
-under the convergence rule — is staged by [IMPLEMENTATION_V2.md](../IMPLEMENTATION_V2.md),
-which also lists the concrete levers expected to push past 0.6071. After that run,
-`results_summary.md` and `submission/` are refreshed from its converged ledger.
+The environment is released at tag `v1.0` (every IMPLEMENTATION.md gate green:
+baseline parity to ±0.0001, test suite, scripted rehearsals, deterministic zoo) and
+raised by the v2 phases at tags `v2-phase-0..2` (snapshot ensembling, positive-history
+attention, blend v2 — [reports/v2.md](../reports/v2.md)). The first scored autonomous
+run (`aug30`, tag `v2.0-release`) then executed under the convergence rule: baseline
+reproduced, blend kept at 0.6075, three follow-ups reverted, `STOP <converged>`, 0
+manual interventions. `results_summary.md` and `submission/` above are refreshed from
+its converged ledger.

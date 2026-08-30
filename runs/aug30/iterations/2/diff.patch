@@ -1,0 +1,13 @@
+diff --git a/train.py b/train.py
+index 8d851b2..457b89c 100644
+--- a/train.py
++++ b/train.py
+@@ -25,7 +25,7 @@ def main() -> int:
+     ap.add_argument("--out", required=True)
+     ap.add_argument("--seed", type=int, default=0)
+     ap.add_argument("--time-budget", type=int, default=300)
+-    ap.add_argument("--model", default="fm")
++    ap.add_argument("--model", default="blend")
+     ap.add_argument("--features", default=None)
+     ap.add_argument("--config-json", default=None,
+                     help="JSON dict merged over the model's default config (used by refit)")
