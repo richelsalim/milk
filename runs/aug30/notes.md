@@ -17,3 +17,10 @@ main-task epoch here. Rules out task-count cuts and epoch-for-capacity trades on
 Next: (1) deepfm dim 16->24 inside its 135 s share (capacity on the cheap base, ple
 untouched); (2) a video-x-tab historical-rate cross feature (item-side context signal,
 eda shows tab rates span 0.004-0.49).
+## After iter 4 (REVERT, 0.6063)
+dim 24 lost 0.0012 — capacity was not the binding constraint; dim 16 embeddings +
+snapshots already sit at this data's interaction-signal ceiling, and wider tables
+overfit the two-week window. Rules out width sweeps. Window is live: iter 5 must
+clear +0.002 over 0.6075 or the run converges. Last mechanism-backed candidate:
+video x tab historical rate cross (eda: tab long_view rates span 0.004-0.49, so the
+same video carries different priors per surface — item-side, varies within user).

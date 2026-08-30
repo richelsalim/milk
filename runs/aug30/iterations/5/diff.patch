@@ -1,0 +1,30 @@
+diff --git a/recsys/features/blocks.py b/recsys/features/blocks.py
+index 64a7feb..312fb94 100644
+--- a/recsys/features/blocks.py
++++ b/recsys/features/blocks.py
+@@ -234,6 +234,12 @@ def cross(rows, hist, tables, info):
+     out = out.join(
+         s.select("_idx", _smoothed("x_vd_pos", "x_vd_n", g).alias("x_vd_lv_rate")), on="_idx"
+     )
++    values = {"x_vt_n": pl.lit(1.0), "x_vt_pos": pl.col("long_view").cast(pl.Float64)}
++    s = _key_sums(rows, hist, split, ["video_id", "tab"], values).fill_null(0)
++    out = out.join(
++        s.select("_idx", pl.col("x_vt_n").alias("x_vt_impressions"),
++                 _smoothed("x_vt_pos", "x_vt_n", g).alias("x_vt_lv_rate")), on="_idx"
++    )
+     return out
+ 
+ 
+diff --git a/recsys/features/spec.py b/recsys/features/spec.py
+index 32b24a1..7ba040f 100644
+--- a/recsys/features/spec.py
++++ b/recsys/features/spec.py
+@@ -32,7 +32,7 @@ class FeatureSpec:
+ 
+ SPECS = {
+     "fm5": FeatureSpec("fm5", 1, ("fm5_fields",)),
+-    "full": FeatureSpec("full", 1, ("ctx", "item_static", "item_stats", "user_static",
++    "full": FeatureSpec("full", 2, ("ctx", "item_static", "item_stats", "user_static",
+                                    "hist_user", "hist_item", "cross", "target_enc", "ids")),
+     "full_nostats": FeatureSpec("full_nostats", 1, ("ctx", "item_static", "user_static",
+                                                     "hist_user", "hist_item", "cross",

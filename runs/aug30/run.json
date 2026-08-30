@@ -18,25 +18,26 @@
   "ndcg5": 0.5357,
   "primary": 0.6016
  },
- "status": "running",
+ "status": "converged",
  "best": {
   "iter": 2,
   "primary": 0.6075055731227548
  },
  "last_kept_iter": 2,
- "next_iter": 5,
+ "next_iter": 6,
  "attempt": 1,
- "consecutive_bad": 2,
+ "consecutive_bad": 3,
  "scored_primaries": [
   0.6016148563428039,
   0.6075055731227548,
   0.606670241600487,
-  0.6062801443677108
+  0.6062801443677108,
+  0.6059263288555699
  ],
  "counts": {
-  "scored": 4,
+  "scored": 5,
   "kept": 2,
-  "reverted": 2,
+  "reverted": 3,
   "abandoned": 0
  }
 }
