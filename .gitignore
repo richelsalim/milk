@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- project (IMPLEMENTATION.md section 0) ---
+data/
+checkpoints/
+runs/*/iterations/*/out/
+runs/*/iterations/*/stdout.log
+submissions/*/iter_*.csv
+*.tar.gz
+.venv/

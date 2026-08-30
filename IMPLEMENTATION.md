@@ -386,7 +386,7 @@ Read program.md and run it end to end for KuaiRand-Pure. Do the setup, then iter
 Tick only after the gate command passed. Commit the tick with the deliverable.
 
 Phase 0: scaffold and constitution
-- [ ] pyproject.toml, .python-version, .gitignore, Makefile; `uv sync` and `ruff check .` pass
+- [x] pyproject.toml, .python-version, .gitignore, Makefile; `uv sync` and `ruff check .` pass
 - [ ] CLAUDE.md written verbatim from Appendix A
 - [ ] docs/autoresearch/ vendored (or MISSING.md noted)
 - [ ] reports/decisions.md started; inputs from section 1 verified

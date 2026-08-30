@@ -1,0 +1,30 @@
+[project]
+name = "milk"
+version = "0.1.0"
+description = "KuaiRand-Pure autoresearch harness"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "numpy>=1.26",
+    "polars>=1.0",
+    "pyarrow>=16",
+    "lightgbm>=4.3",
+    "torch>=2.2",        # PyPI wheels are CPU-only on Windows; CUDA/MPS auto-detected when present
+    "scikit-learn>=1.4", # utilities only (CLAUDE.md)
+    "matplotlib>=3.8",   # trajectory.png (phase 6)
+    "psutil>=5.9",       # watchdog RSS sampling (phase 4)
+]
+
+[dependency-groups]
+dev = ["ruff>=0.4", "pytest>=8"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["starter_kit", "kuairand-starter-kit", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
