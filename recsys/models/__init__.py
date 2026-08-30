@@ -1,6 +1,7 @@
 """Model registry: name -> (class, default config, default feature spec)."""
 
 from recsys.models.base import Recommender  # noqa: F401
+from recsys.models.blend import Blend
 from recsys.models.classic import FMRec, PopularityRec, RandomRec
 from recsys.models.gbm import LGBMLambdarank, LGBMPointwise
 from recsys.models.torch_models import CWM, PLE, DCNv2, DeepFM, DINLite, MMoE
@@ -17,5 +18,6 @@ MODELS = {
     "ple": (PLE, {}, "full"),
     "cwm": (CWM, {}, "full"),
     "din_lite": (DINLite, {}, "full_seq"),
+    "blend": (Blend, {"models": ["lgbm_lambdarank", "lgbm_pointwise"],
                       "mode": "stack", "folds": 3}, "full"),
 }

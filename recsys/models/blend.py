@@ -1,0 +1,77 @@
+"""Blend rung: rank-average of registered models, or a linear stacker fitted on
+out-of-fold training-window predictions built by date folds. Never fitted on validation."""
+
+from __future__ import annotations
+
+import numpy as np
+
+from recsys.models.base import Recommender
+
+
+def _ranks(a: np.ndarray) -> np.ndarray:
+    order = np.argsort(a, kind="stable")
+    r = np.empty(len(a), dtype=np.float64)
+    r[order] = np.arange(len(a))
+    return r / max(1, len(a) - 1)
+
+
+class Blend(Recommender):
+    def _bases(self):
+        from recsys.models import MODELS
+        names = self.config.get("models", ["lgbm_lambdarank", "lgbm_pointwise"])
+        out = []
+        for n in names:
+            cls, cfg, spec = MODELS[n]
+            out.append((n, cls, dict(cfg)))
+        return out
+
+    def fit(self, X_train, y_train, groups_train, aux_train=None,
+            X_val=None, y_val=None, groups_val=None, time_budget=300, seed=0):
+        mode = self.config.get("mode", "stack")
+        folds = int(self.config.get("folds", 3))
+        bases = self._bases()
+        self.mode = mode
+        if mode == "stack":
+            dates = (aux_train or {}).get("date")
+            if dates is None:
+                raise ValueError("blend stack mode needs aux_train['date'] (train row dates)")
+            uniq = np.unique(dates)
+            chunks = np.array_split(uniq, folds + 1)
+            share = time_budget / max(1, (folds + 1) * len(bases))
+            oof = {n: [] for n, _, _ in bases}
+            oof_y = []
+            for k in range(1, folds + 1):
+                fit_mask = np.isin(dates, np.concatenate(chunks[:k]))
+                pred_mask = np.isin(dates, chunks[k])
+                oof_y.append(y_train[pred_mask])
+                for n, cls, cfg in bases:
+                    m = cls(meta=self.meta, **{**cfg, "rounds": self.config.get("fold_rounds", 150)})
+                    m.fit(X_train[fit_mask], y_train[fit_mask], groups_train[fit_mask],
+                          aux_train={k2: v[fit_mask] for k2, v in (aux_train or {}).items()},
+                          time_budget=share, seed=seed)
+                    p = m.predict(X_train[pred_mask], groups_train[pred_mask]).astype(np.float64)
+                    oof[n].append((p - p.mean()) / (p.std() + 1e-9))
+            Z = np.stack([np.concatenate(oof[n]) for n, _, _ in bases], axis=1)
+            yy = np.concatenate(oof_y)
+            w, *_ = np.linalg.lstsq(Z, yy - yy.mean(), rcond=None)
+            w = np.clip(w, 0, None)
+            self.weights = (w / w.sum()) if w.sum() > 0 else np.full(len(bases), 1 / len(bases))
+            self.info["stack_weights"] = {n: float(x) for (n, _, _), x in zip(bases, self.weights)}
+        self.models = []
+        share = time_budget / max(1, len(bases)) if mode == "rank_avg" else \
+            time_budget / max(1, (folds + 1) * len(bases))
+        for n, cls, cfg in bases:
+            m = cls(meta=self.meta, **cfg)
+            m.fit(X_train, y_train, groups_train, aux_train=aux_train,
+                  X_val=X_val, y_val=y_val, groups_val=groups_val,
+                  time_budget=share, seed=seed)
+            self.models.append((n, m))
+        self.info["rounds_used"] = {n: m.info.get("rounds_used") for n, m in self.models}
+        return self
+
+    def predict(self, X, groups):
+        preds = [m.predict(X, groups).astype(np.float64) for _, m in self.models]
+        if self.mode == "stack":
+            z = [(p - p.mean()) / (p.std() + 1e-9) for p in preds]
+            return np.sum([w * p for w, p in zip(self.weights, z)], axis=0).astype(np.float32)
+        return np.mean([_ranks(p) for p in preds], axis=0).astype(np.float32)
