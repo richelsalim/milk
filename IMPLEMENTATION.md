@@ -409,13 +409,13 @@ Phase 2: feature layer
 - [x] reports/phase2.md written; pushed, tagged phase-2
 
 Phase 3: model zoo and train.py
-- [ ] base.py, registry, losses.py
-- [ ] rungs: random, popularity, fm (parity), lgbm_pointwise, lgbm_lambdarank, deepfm, dcnv2, mmoe, ple, cwm, din_lite, blend
-- [ ] recsys/zoo.py list and bench; reports/zoo_baselines.md
-- [ ] train.py meets the Appendix A contract with defaults fm / fm5
-- [ ] tests/test_models.py and tests/test_train.py green
-- [ ] zoo gate: a non-fm rung beats fm by 0.005 or more on validation
-- [ ] reports/phase3.md written; pushed, tagged phase-3
+- [x] base.py, registry, losses.py
+- [x] rungs: random, popularity, fm (parity), lgbm_pointwise, lgbm_lambdarank, deepfm, dcnv2, mmoe, ple, cwm, din_lite, blend
+- [x] recsys/zoo.py list and bench; reports/zoo_baselines.md
+- [x] train.py meets the Appendix A contract with defaults fm / fm5
+- [x] tests/test_models.py and tests/test_train.py green
+- [x] zoo gate: a non-fm rung beats fm by 0.005 or more on validation (blend 0.6071 = fm + 0.0055)
+- [x] reports/phase3.md written; pushed, tagged phase-3
 
 Phase 4: autoresearch loop
 - [ ] harness start, iterate, abandon, revert, status, intervene, finish
