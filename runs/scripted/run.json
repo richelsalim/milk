@@ -1,0 +1,45 @@
+{
+ "run_id": "scripted",
+ "dataset": "pure",
+ "history_end": 20220421,
+ "time_budget": 5,
+ "max_iters": 50,
+ "wall_clock_hours": 6,
+ "eps": 0.002,
+ "patience": 3,
+ "seeds": [
+  0
+ ],
+ "rss_cap_gb": 16,
+ "started_at": 1788088728.1822796,
+ "base_commit": "98475d4",
+ "baseline": {
+  "gauc": 0.6674,
+  "ndcg5": 0.5357,
+  "primary": 0.6016
+ },
+ "status": "converged",
+ "best": {
+  "iter": 4,
+  "primary": 0.5143781201235067
+ },
+ "last_kept_iter": 4,
+ "next_iter": 9,
+ "attempt": 1,
+ "consecutive_bad": 4,
+ "scored_primaries": [
+  0.46077661568014655,
+  0.46571824313540167,
+  0.4591126162152193,
+  0.5143781201235067,
+  0.4792067048762493,
+  0.5143781201235067,
+  0.5101282834579295
+ ],
+ "counts": {
+  "scored": 7,
+  "kept": 3,
+  "reverted": 4,
+  "abandoned": 1
+ }
+}

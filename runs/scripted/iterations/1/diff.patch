@@ -1,0 +1,13 @@
+diff --git a/train.py b/train.py
+index 2297ad9..3670fda 100644
+--- a/train.py
++++ b/train.py
+@@ -17,7 +17,7 @@ import polars as pl
+ sys.path.insert(0, str(Path(__file__).resolve().parent))
+ import prepare  # noqa: E402
+ 
+-QUALITY = 0.20
++QUALITY = 0.2
+ # FAULT
+ 
+ ap = argparse.ArgumentParser()

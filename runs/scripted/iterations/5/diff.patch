@@ -1,0 +1,16 @@
+diff --git a/train.py b/train.py
+index 4b52e4e..673a439 100644
+--- a/train.py
++++ b/train.py
+@@ -17,8 +17,9 @@ import polars as pl
+ sys.path.insert(0, str(Path(__file__).resolve().parent))
+ import prepare  # noqa: E402
+ 
+-QUALITY = 0.9
+-# FAULT
++QUALITY = 0.95
++import time as _t
++_t.sleep(120)
+ 
+ ap = argparse.ArgumentParser()
+ ap.add_argument("--out", required=True)

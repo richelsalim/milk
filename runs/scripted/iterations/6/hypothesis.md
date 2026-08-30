@@ -1,0 +1,1 @@
+nan bug, then fixed at 0.50
