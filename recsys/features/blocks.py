@@ -290,10 +290,49 @@ def seq(rows, hist, tables, info):
             .sort("_idx").drop("user_id").fill_null(0))
 
 
+def seq_pos(rows, hist, tables, info):
+    """Last SEQ_LEN POSITIVE (long_view == 1) impressions of the user before this row
+    (video/author/tag ids, duration, watch ratio), padded with -1/0. Leakage contract
+    identical to `seq`: strictly-past rows for train (same (user_id, time_ms, _idx)
+    tie order), the user's last SEQ_LEN positive training-window rows for val/test —
+    never rows of the evaluation split itself."""
+    feats = {"video_id": ("sp_v", -1), "_author": ("sp_a", -1), "_tag1": ("sp_t", -1),
+             "duration_ms": ("sp_d", 0.0), "_wr": ("sp_w", 0.0)}
+    names = [f"{pfx}{k}" for _c, (pfx, _f) in feats.items() for k in range(1, SEQ_LEN + 1)]
+    if info["split"] == "train":
+        work = rows.select("_idx", "user_id", "time_ms", "long_view", *feats).sort(
+            ["user_id", "time_ms", "_idx"])
+        flag = (pl.col("long_view") == 1).cast(pl.Int64)
+        work = work.with_columns((flag.cum_sum().over("user_id") - flag).alias("_ppos"))
+        lists = (work.filter(pl.col("long_view") == 1)
+                 .group_by("user_id", maintain_order=True)
+                 .agg([pl.col(c).alias(f"_L{c}") for c in feats]))
+        work = work.join(lists, on="user_id", how="left")
+        cols = [pl.when(pl.col("_ppos") >= k)
+                .then(pl.col(f"_L{c}").list.get(pl.col("_ppos") - k, null_on_oob=True))
+                .otherwise(pl.lit(fill)).alias(f"{pfx}{k}")
+                for c, (pfx, fill) in feats.items() for k in range(1, SEQ_LEN + 1)]
+        return work.with_columns(cols).sort("_idx").select("_idx", *names)
+    tail = (hist.filter(pl.col("long_view") == 1).sort(["user_id", "time_ms"])
+            .group_by("user_id", maintain_order=True)
+            .agg([pl.col(c).tail(SEQ_LEN).alias(c) for c in feats]))
+    cols = []
+    for c, (pfx, fill) in feats.items():
+        cols += [pl.col(c).list.get(-k, null_on_oob=True).fill_null(fill).alias(f"{pfx}{k}")
+                 for k in range(1, SEQ_LEN + 1)]
+    tail = tail.select("user_id", *cols)
+    out = rows.select("_idx", "user_id").join(tail, on="user_id", how="left")
+    fills = {f"{pfx}{k}": fill for _c, (pfx, fill) in feats.items()
+             for k in range(1, SEQ_LEN + 1)}
+    return (out.sort("_idx").drop("user_id")
+            .with_columns([pl.col(n).fill_null(v) for n, v in fills.items()]))
+
+
 BLOCKS = {
     "ctx": ctx, "item_static": item_static, "item_stats": item_stats,
     "user_static": user_static, "hist_user": hist_user, "hist_item": hist_item,
     "cross": cross, "target_enc": target_enc, "ids": ids, "seq": seq,
+    "seq_pos": seq_pos,
 }
 
 

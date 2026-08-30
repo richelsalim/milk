@@ -154,3 +154,50 @@ def test_two_builds_identical_hashes():
 def test_val_history_end_leak_guard():
     with pytest.raises(ValueError):
         build("full", "val", history_end=20220422)
+
+
+# ---------------------------------------------------------------- v2.1: seq_pos
+
+def _toy_X_seqpos(labels):
+    rows = _toy_log(labels)
+    X, meta, _ = _assemble(SPECS["full_seqpos"], rows, rows, _toy_tables(), "train")
+    return X, meta
+
+
+def test_seq_pos_time_safety_later_labels_do_not_matter():
+    base = [1, 0, 1, 0, 1, 0, 1, 1, 0]
+    X0, meta = _toy_X_seqpos(base)
+    shuffled = base[:5] + [base[i] for i in (7, 8, 5, 6)]
+    assert shuffled != base
+    X1, _ = _toy_X_seqpos(shuffled)
+    np.testing.assert_array_equal(
+        X0[:5], X1[:5],
+        err_msg="seq_pos of earlier rows changed when later labels shuffled")
+
+
+def test_seq_pos_earlier_positive_flip_is_seen():
+    base = [1, 0, 1, 0, 1, 0, 1, 1, 0]
+    X0, meta = _toy_X_seqpos(base)
+    flipped = list(base)
+    flipped[0] ^= 1  # user 1's first row was positive; row 1's history must lose it
+    X1, _ = _toy_X_seqpos(flipped)
+    col = meta["columns"].index("sp_v1")
+    assert X0[1, col] == 10 and X1[1, col] == -1
+
+
+def test_seq_pos_only_positives_enter():
+    # user 1: rows 0 (video 10, pos), 1 (video 11, NEG), 2: last positive must be
+    # video 10, not the negative row 1
+    X, meta = _toy_X_seqpos([1, 0, 1, 0, 1, 0, 1, 1, 0])
+    c = meta["columns"]
+    assert X[2, c.index("sp_v1")] == 10
+    assert X[1, c.index("sp_v1")] == 10  # row 1 sees row 0, not itself
+
+
+def test_seqpos_no_label_columns_and_group_order():
+    for split in ("train", "val", "test"):
+        X, meta, group = build("full_seqpos", split)
+        assert not set(meta["columns"]) & set(prepare.FEEDBACK_COLS)
+        expect = prepare.load(split)["user_id"].to_numpy()
+        np.testing.assert_array_equal(group, expect)
+        assert X.dtype == np.float32 and np.isfinite(X).all()

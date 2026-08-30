@@ -42,6 +42,11 @@ SPECS = {
     "full_seq": FeatureSpec("full_seq", 1, ("ctx", "item_static", "item_stats", "user_static",
                                             "hist_user", "hist_item", "cross", "target_enc",
                                             "ids", "seq")),
+    # v2.1: positive-only history for DIN-style attention (classic DIN attends over
+    # what the user LIKED, not over the ~66%-negative full stream)
+    "full_seqpos": FeatureSpec("full_seqpos", 1, ("ctx", "item_static", "item_stats",
+                                                  "user_static", "hist_user", "hist_item",
+                                                  "cross", "target_enc", "ids", "seq_pos")),
 }
 
 CATEGORICAL = {"ctx_tab", "ctx_hour", "ctx_dow", "ctx_is_rand", "it_dur_bucket",
