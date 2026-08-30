@@ -53,3 +53,17 @@ class Recommender:
 
     def _col(self, name: str) -> int:
         return self.meta["columns"].index(name)
+
+    def _recency_weights(self, X):
+        """Per-row 0.5 ** (age_days / half_life) sample weights, or None when the
+        `recency_half_life_days` knob is off. Age is measured back from the newest
+        training row; callers normalize to mean 1 after any row selection."""
+        hl = (getattr(self, "cfg", None) or self.config).get("recency_half_life_days")
+        if not hl:
+            return None
+        try:
+            a = X[:, self._col("ctx_days_since_start")].astype(np.float64)
+        except ValueError:
+            raise ValueError("recency_half_life_days needs the ctx block "
+                             "(ctx_days_since_start) in the feature spec") from None
+        return 0.5 ** ((a.max() - a) / float(hl))

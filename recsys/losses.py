@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 
 
-def bce(logits, y, seg=None):
-    return F.binary_cross_entropy_with_logits(logits, y)
+def bce(logits, y, seg=None, w=None):
+    return F.binary_cross_entropy_with_logits(logits, y, weight=w)
 
 
 def _segment_max(values, seg, n_seg):

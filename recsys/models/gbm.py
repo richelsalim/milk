@@ -24,7 +24,7 @@ class _LGBMBase(Recommender):
             p["eval_at"] = [5]  # default label_gain already equals 2^rel - 1
         p.update({k: v for k, v in self.config.items()
                   if k not in ("rounds", "max_rounds", "patience_evals",
-                               "exclude_id_cats", "min_day")})
+                               "exclude_id_cats", "min_day", "recency_half_life_days")})
         return p
 
     def _cat_idx(self):
@@ -48,6 +48,10 @@ class _LGBMBase(Recommender):
         if mask is not None:
             X, y, groups = X[mask], y[mask], groups[mask]
             self.info["train_rows_used"] = int(mask.sum())
+        w = self._recency_weights(X)
+        if w is not None:
+            w = w / w.mean()
+            self.info["recency_half_life_days"] = self.config["recency_half_life_days"]
         if self.objective == "lambdarank":
             perm = np.argsort(groups, kind="stable")
             _, counts = np.unique(groups[perm], return_counts=True)
@@ -62,10 +66,11 @@ class _LGBMBase(Recommender):
                 chunked.append(c)
             data = lgb.Dataset(X[perm], label=y[perm].astype(np.int32),
                                group=np.asarray(chunked),
+                               weight=None if w is None else w[perm],
                                categorical_feature=self._cat_idx(),
                                free_raw_data=True)
         else:
-            data = lgb.Dataset(X, label=y, categorical_feature=self._cat_idx(),
+            data = lgb.Dataset(X, label=y, weight=w, categorical_feature=self._cat_idx(),
                                free_raw_data=True)
         return data
 
