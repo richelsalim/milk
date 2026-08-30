@@ -389,8 +389,8 @@ Phase 0: scaffold and constitution
 - [x] pyproject.toml, .python-version, .gitignore, Makefile; `uv sync` and `ruff check .` pass
 - [x] CLAUDE.md written verbatim from Appendix A
 - [x] docs/autoresearch/ vendored (or MISSING.md noted)
-- [ ] reports/decisions.md started; inputs from section 1 verified
-- [ ] pushed, tagged phase-0
+- [x] reports/decisions.md started; inputs from section 1 verified
+- [x] pushed, tagged phase-0
 
 Phase 1: frozen layer, parity, guards, EDA
 - [ ] starter_kit/ vendored unchanged, MANIFEST.sha256, NOTES.md
