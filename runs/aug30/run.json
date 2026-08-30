@@ -20,19 +20,20 @@
  },
  "status": "running",
  "best": {
-  "iter": 1,
-  "primary": 0.6016148563428039
+  "iter": 2,
+  "primary": 0.6075055731227548
  },
- "last_kept_iter": 1,
- "next_iter": 2,
+ "last_kept_iter": 2,
+ "next_iter": 3,
  "attempt": 1,
  "consecutive_bad": 0,
  "scored_primaries": [
-  0.6016148563428039
+  0.6016148563428039,
+  0.6075055731227548
  ],
  "counts": {
-  "scored": 1,
-  "kept": 1,
+  "scored": 2,
+  "kept": 2,
   "reverted": 0,
   "abandoned": 0
  }
