@@ -95,3 +95,11 @@ Running log of decisions made without confirmation (IMPLEMENTATION.md section 0)
   full-budget models are unaffected in practice (they patience-stop before the deadline).
 - **fm-in-blend**: fm consumes the fm5 spec but a blend runs one spec; FMRec gained a `fields`
   column-subset config (5 id_ fields on `full`) rather than teaching Blend per-base specs.
+
+### 2026-08-30 phase V2.4
+- **Dataset selection for harness runs**: the frozen watchdog invokes train.py with only
+  --out/--seed/--time-budget, so the 1k run selects its dataset via a KUAIRAND_DATASET env
+  var read by (mutable) train.py and exported by the shell that calls `harness iterate`.
+  Recorded in config.json per iteration. The harness's baseline row (fm_official on Pure,
+  0.6016) is hard-coded in the frozen layer, so the 1k ledger's delta_vs_baseline column is
+  cosmetic — noted in the run's notes.md; no official 1k baseline exists to compare against.

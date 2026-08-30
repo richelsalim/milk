@@ -7,6 +7,7 @@ exits 0. Defaults reproduce the official FM baseline (model fm, spec fm5).
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -40,18 +41,21 @@ def main() -> int:
         raw = a.config_json
         cfg.update(json.loads(Path(raw).read_text(encoding="utf-8") if Path(raw).exists() else raw))
 
+    # the harness invokes train.py without a dataset flag; a 1k/27k run exports
+    # KUAIRAND_DATASET in the shell that calls `harness iterate` (default: pure)
+    ds = os.environ.get("KUAIRAND_DATASET", "pure")
     refit = a.history_end > prepare.SPLITS["train"][1]
     t0 = time.time()
-    Xtr, meta, gtr = build(spec, "train", history_end=a.history_end)
-    Xte, _, gte = build(spec, "test", history_end=a.history_end)
-    train_frame = prepare.load("train", history_end=a.history_end)
+    Xtr, meta, gtr = build(spec, "train", history_end=a.history_end, dataset=ds)
+    Xte, _, gte = build(spec, "test", history_end=a.history_end, dataset=ds)
+    train_frame = prepare.load("train", dataset=ds, history_end=a.history_end)
     ytr = train_frame["long_view"].to_numpy().astype(np.float32)
     aux = make_aux(train_frame)
     if refit:
         Xva = gva = yva = None
     else:
-        Xva, _, gva = build(spec, "val")
-        yva = prepare.load("val")["long_view"].to_numpy().astype(np.float32)
+        Xva, _, gva = build(spec, "val", dataset=ds)
+        yva = prepare.load("val", dataset=ds)["long_view"].to_numpy().astype(np.float32)
 
     model = cls(meta=meta, **cfg)
     model.fit(Xtr, ytr, gtr, aux_train=aux, X_val=Xva, y_val=yva, groups_val=gva,
@@ -67,7 +71,8 @@ def main() -> int:
         np.save(out / "val_scores.npy", val_scores)
     model.save(out)
     config = {
-        "model": a.model, "features": spec, "seed": a.seed, "time_budget": a.time_budget,
+        "model": a.model, "features": spec, "dataset": ds,
+        "seed": a.seed, "time_budget": a.time_budget,
         "config": cfg, "info": model.info, "history_end": a.history_end,
         "n_val": None if refit else len(val_scores), "n_test": len(test_scores),
         "total_sec": round(time.time() - t0, 1),
