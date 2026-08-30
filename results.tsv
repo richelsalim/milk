@@ -3,4 +3,4 @@ iter	commit	status	primary	gauc	ndcg5	delta_vs_baseline	train_sec	seed	descripti
 2	526af02	keep	0.6075	0.6751	0.5399	+0.0059	286.9	0	diverse snapshot blend deepfm+ple, weight grid
 3	8424aef	revert	0.6067	0.6743	0.5391	+0.0051	267.5	0	ple aux-head pruning buys 4th epoch in blend
 4	54de391	revert	0.6063	0.6736	0.5390	+0.0047	317.4	0	deepfm dim 24, epochs 5, same share
-5		revert	0.6059	0.6729	0.5390	+0.0043	321.6	0	video x tab historical rate cross feature
+5	9a05332	revert	0.6059	0.6729	0.5390	+0.0043	321.6	0	video x tab historical rate cross feature

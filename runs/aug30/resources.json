@@ -1,0 +1,17 @@
+{
+ "iterations_used": 5,
+ "scored": 5,
+ "kept": 2,
+ "reverted": 3,
+ "abandoned": 0,
+ "wall_clock_hours": 0.409,
+ "tokens": {
+  "in": 14000,
+  "out": 2500
+ },
+ "tokens_note": null,
+ "gpu_hours": 0.0,
+ "gpu_note": "nvidia-smi present but not sampled during the run; models ran on CPU",
+ "interventions": 0,
+ "iteration_interpretation": "An iteration is one scored experiment. Failed attempts (max 3) do not consume an iteration number; after 3 the iteration is abandoned. Abandoned iterations count toward the 50 cap but not toward the convergence window, because they produced no score."
+}
