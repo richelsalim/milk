@@ -138,6 +138,7 @@ def build(spec_name: str, split: str, history_end: int = prepare.HISTORY_END,
     tables = prepare.tables(dataset)
     X, meta, group = _assemble(spec, rows_raw, hist_raw, tables, split)
     meta["history_end"] = history_end
+    meta["dataset"] = dataset
 
     if use_cache:
         fdir.mkdir(parents=True, exist_ok=True)

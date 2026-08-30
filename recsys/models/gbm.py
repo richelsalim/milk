@@ -51,8 +51,17 @@ class _LGBMBase(Recommender):
         if self.objective == "lambdarank":
             perm = np.argsort(groups, kind="stable")
             _, counts = np.unique(groups[perm], return_counts=True)
+            # LightGBM caps a query at 10k rows; split heavier users (1k/27k datasets)
+            # into adjacent sub-lists — within-user ordering still trains per chunk.
+            cap = 10_000
+            chunked = []
+            for c in counts:
+                while c > cap:
+                    chunked.append(cap)
+                    c -= cap
+                chunked.append(c)
             data = lgb.Dataset(X[perm], label=y[perm].astype(np.int32),
-                               group=counts,
+                               group=np.asarray(chunked),
                                categorical_feature=self._cat_idx(),
                                free_raw_data=True)
         else:

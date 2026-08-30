@@ -436,11 +436,11 @@ Phase 5: scripted dry run and fault injection
 - [x] reports/phase5.md written; pushed, tagged phase-5
 
 Phase 6: deliverables and bonus datasets
-- [ ] harness report writes results_table.md, resources.md, interventions.md, iteration_log.md, trajectory.png
-- [ ] README.md with all required sections; docs/devpost.md skeleton
-- [ ] prepare.py --dataset 1k builds and verifies; lambdarank bench passes on 1k (or 1k files absent, noted)
-- [ ] 27k loader with documented sampling policy (not run end to end unless 1k is green)
-- [ ] reports/phase6.md written; pushed, tagged phase-6
+- [x] harness report writes results_table.md, resources.md, interventions.md, iteration_log.md, trajectory.png
+- [x] README.md with all required sections; docs/devpost.md skeleton
+- [x] prepare.py --dataset 1k builds and verifies; lambdarank bench passes on 1k (0.6573; 1k downloaded from the organizer Zenodo record)
+- [x] 27k loader with documented sampling policy (not run end to end; 27k raw files not downloaded — 1k is green so the precondition holds if ever needed)
+- [x] reports/phase6.md written; pushed, tagged phase-6
 
 Phase 7: final validation and release
 - [ ] full go/no-go list green, outputs in reports/final.md

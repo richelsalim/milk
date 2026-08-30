@@ -44,7 +44,8 @@ class Recommender:
     # helpers shared by subclasses -------------------------------------------
     def _val_primary(self, scores) -> float:
         """Score candidate validation predictions through the organizer metric."""
-        return prepare.evaluate("val", np.asarray(scores, dtype=np.float64))["primary"]
+        return prepare.evaluate("val", np.asarray(scores, dtype=np.float64),
+                                dataset=self.meta.get("dataset", "pure"))["primary"]
 
     @staticmethod
     def _deadline(time_budget):
