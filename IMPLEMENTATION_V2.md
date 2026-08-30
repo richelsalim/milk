@@ -180,11 +180,11 @@ Skipping this phase is recorded in the checklist, not a failure.
 ## 4. Master checklist
 
 Phase V2.0: free budget
-- [ ] budget-free snapshot selection (cached predictions), default snapshot_k=3
-- [ ] trainer throughput: >= 8 full-data ple epochs in 300 s (or measured best, documented)
-- [ ] recency_half_life_days knob (lgbm + torch), grid benched
-- [ ] new unit tests green; full pytest green; bench walls <= 330 s
-- [ ] reports/v2.md section; pushed, tagged v2-phase-0
+- [x] budget-free snapshot selection (cached predictions), default snapshot_k=3
+- [x] trainer throughput: >= 8 full-data ple epochs in 300 s (or measured best, documented)
+- [x] recency_half_life_days knob (lgbm + torch), grid benched
+- [x] new unit tests green; full pytest green; bench walls <= 330 s
+- [x] reports/v2.md section; pushed, tagged v2-phase-0
 
 Phase V2.1: positive-history attention
 - [ ] seq_pos block + full_seqpos spec, time-safety tests green

@@ -69,3 +69,18 @@ Running log of decisions made without confirmation (IMPLEMENTATION.md section 0)
 - **Popularity parity rung formula**: IMPLEMENTATION.md pins "training-window long_view *count* per video, 0 for unseen" with expected primary in [0.55, 0.60] — but on the real validation split the count variant scores **0.5435**, outside the guide's own range. The published popularity rung (valid 0.5807) is the starter kit's `run_pop`: smoothed long_view *rate* `(pos + 20*gmean)/(imp + 20)`, global mean for unseen. Ground-truth precedence (starter-kit code > IMPLEMENTATION.md) resolves the inconsistency: `prepare.popularity_scores` implements the kit formula and the [0.55, 0.60] assertion is kept. Not a block — the Phase 1 blocking condition is FM parity, which passed (0.6015 / 0.6671 / 0.5358 vs published 0.6016 / 0.6674 / 0.5357).
 - **Fixture**: 315 users sampled (seed 0, users present in all three splits, greedy fill to 20k rows) -> 15,753 / 1,877 / 2,528 rows. The fixture is a full parallel data root (raw CSVs + cache) under `data/cache/fixture_small/`, selected via `KUAIRAND_DATA_ROOT`, so `submit.py --check`, `prepare.*` and later the whole harness run on it unchanged.
 - **`--verify` idempotence + speed**: the three parity rungs are cached in `data/cache/parity.json`, keyed on the starter-kit and cache manifests (plus formula tag). First `--verify` computes and writes it (~4 min, FM subprocess); later runs are read-only and instant. The second-run-makes-no-changes property holds from run 2 onward.
+
+## v2 (IMPLEMENTATION_V2.md)
+
+### 2026-08-30 phase V2.0
+- **Throughput target (>=8 ple epochs/300s) missed and documented, not chased**: profiling showed
+  batch assembly was ~0.2% of epoch wall; the epoch is compute-bound at ~45 s (model matmuls).
+  Batch 8192 + scaled lr saves ~5% wall but loses quality at equal epochs; extra threads do
+  nothing (6 physical cores). Kept batch 4096 / lr 1e-3. The waste v1 actually had — 16 head-grid
+  re-predictions and snapshot re-scoring — is now zero-forward (cached per-epoch val predictions).
+- **Commit granularity**: the guide names 4 commit points but snapshots/throughput/recency all
+  rewrite the same fit(); landed as 3 self-consistent commits (recency foundations; torch fit
+  rewrite; tests+bench+report).
+- **Recency grid None cells** reuse the fresh v2.0 ple bench and v1's lgbm_pointwise row — the
+  knob-off code path is byte-identical (unit-tested determinism), so re-benching None would
+  duplicate rows.
