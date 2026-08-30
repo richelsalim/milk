@@ -126,7 +126,7 @@ def build(spec_name: str, split: str, history_end: int = prepare.HISTORY_END,
     mpath = fpath.with_suffix(".meta.json")
     if use_cache and fpath.exists() and mpath.exists():
         frame = pl.read_parquet(fpath)
-        meta = json.loads(mpath.read_text())
+        meta = json.loads(mpath.read_text(encoding="utf-8"))
         group = frame["__group"].to_numpy().astype(np.int64)
         X = frame.drop("__group").to_numpy().astype(np.float32)
         return X, meta, group
@@ -145,7 +145,7 @@ def build(spec_name: str, split: str, history_end: int = prepare.HISTORY_END,
             pl.Series("__group", group)
         )
         cache_frame.write_parquet(fpath)
-        mpath.write_text(json.dumps(meta))
+        mpath.write_text(json.dumps(meta), encoding="utf-8")
     return X, meta, group
 
 

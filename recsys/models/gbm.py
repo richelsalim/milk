@@ -23,19 +23,40 @@ class _LGBMBase(Recommender):
         if self.objective == "lambdarank":
             p["eval_at"] = [5]  # default label_gain already equals 2^rel - 1
         p.update({k: v for k, v in self.config.items()
-                  if k not in ("rounds", "max_rounds", "patience_evals")})
+                  if k not in ("rounds", "max_rounds", "patience_evals",
+                               "exclude_id_cats", "min_day")})
         return p
 
+    def _cat_idx(self):
+        cats = self.meta["categorical_idx"]
+        if self.config.get("exclude_id_cats"):
+            cols = self.meta["columns"]
+            cats = [i for i in cats if not cols[i].startswith(("id_", "fm5_user", "fm5_video"))]
+        return cats
+
+    def _train_mask(self, X):
+        """Optional alignment fix: drop early train rows whose strict-past history is
+        much thinner than the full window val/test rows see (config min_day)."""
+        min_day = self.config.get("min_day")
+        if not min_day:
+            return None
+        col = self._col("ctx_days_since_start")
+        return X[:, col] >= min_day
+
     def _dataset(self, X, y, groups, seed):
+        mask = self._train_mask(X)
+        if mask is not None:
+            X, y, groups = X[mask], y[mask], groups[mask]
+            self.info["train_rows_used"] = int(mask.sum())
         if self.objective == "lambdarank":
             perm = np.argsort(groups, kind="stable")
             _, counts = np.unique(groups[perm], return_counts=True)
             data = lgb.Dataset(X[perm], label=y[perm].astype(np.int32),
                                group=counts,
-                               categorical_feature=self.meta["categorical_idx"],
+                               categorical_feature=self._cat_idx(),
                                free_raw_data=True)
         else:
-            data = lgb.Dataset(X, label=y, categorical_feature=self.meta["categorical_idx"],
+            data = lgb.Dataset(X, label=y, categorical_feature=self._cat_idx(),
                                free_raw_data=True)
         return data
 

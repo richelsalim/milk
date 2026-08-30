@@ -114,6 +114,7 @@ class _TorchRec(Recommender):
         deadline = self._deadline(time_budget)
         fixed = cfg.get("rounds")
         best, best_state, bad, used = -1.0, None, 0, 0
+        snapshots = []  # (primary, state_dict) per epoch, for snapshot averaging
         n_users = len(starts)
         for ep in range(1, cfg["epochs"] + 1):
             self.net.train()
@@ -146,6 +147,9 @@ class _TorchRec(Recommender):
                     break
                 continue
             primary = self._val_primary(self.predict(X_val, groups_val))
+            if cfg.get("snapshot_k"):
+                snapshots.append((primary, {k: v.detach().clone()
+                                            for k, v in self.net.state_dict().items()}))
             if primary > best + 1e-5:
                 best, bad = primary, 0
                 best_state = {k: v.detach().clone() for k, v in self.net.state_dict().items()}
@@ -155,9 +159,21 @@ class _TorchRec(Recommender):
                 break
         if best_state is not None:
             self.net.load_state_dict(best_state)
+        k = int(cfg.get("snapshot_k") or 0)
+        if k > 1 and len(snapshots) > 1:
+            # snapshot ensemble: average predictions of the top-k epoch checkpoints,
+            # selected on validation (same information early stopping already uses)
+            snapshots.sort(key=lambda s: -s[0])
+            self._snapshots = [s[1] for s in snapshots[:k]]
+            ens = self._val_primary(self.predict(X_val, groups_val))
+            if ens > best:
+                best = ens
+                self.info["snapshot_ensemble"] = {"k": len(self._snapshots), "primary": ens}
+            else:
+                self._snapshots = None  # single best state wins
         self.info.update({"rounds_used": used,
                           "best_val_primary": best if best > 0 else None,
-                          "config": {k: v for k, v in cfg.items()}})
+                          "config": {k2: v for k2, v in cfg.items()}})
         self._post_fit(X_val, y_val, groups_val)
         return self
 
@@ -166,6 +182,19 @@ class _TorchRec(Recommender):
 
     @torch.no_grad()
     def predict(self, X, groups):
+        states = getattr(self, "_snapshots", None)
+        if states:
+            current = {k: v.detach().clone() for k, v in self.net.state_dict().items()}
+            preds = []
+            for sd in states:
+                self.net.load_state_dict(sd)
+                preds.append(self._predict_once(X))
+            self.net.load_state_dict(current)
+            return np.mean(preds, axis=0).astype(np.float32)
+        return self._predict_once(X)
+
+    @torch.no_grad()
+    def _predict_once(self, X):
         self.net.eval()
         out = []
         for i in range(0, len(X), 65_536):
@@ -230,17 +259,21 @@ class DCNv2(_TorchRec):
 
 
 class _MultiTask(_TorchRec):
-    """Shared plumbing for mmoe/ple: 8 heads (long_view + 6 aux binaries + watch ratio),
-    optional grid-searched head combination chosen on validation."""
+    """Shared plumbing for mmoe/ple: long_view + aux binary heads + watch-ratio head,
+    optional grid-searched head combination chosen on validation. Config knobs:
+    aux_tasks (list), aux_weight, wr_weight."""
 
-    tasks = ["long_view"] + AUX_TASKS + ["watch_ratio"]
+    @property
+    def tasks(self):
+        return ["long_view"] + self.cfg.get("aux_tasks", AUX_TASKS) + ["watch_ratio"]
 
     def _loss(self, outs, yb, seg, auxb):
-        loss = bce(outs[:, 0], yb)
-        for i, t in enumerate(AUX_TASKS, start=1):
-            loss = loss + 0.3 * bce(outs[:, i], auxb[t])
+        loss = LOSSES[self.cfg.get("main_loss", "bce")](outs[:, 0], yb, seg)
+        aw = self.cfg.get("aux_weight", 0.3)
+        for i, t in enumerate(self.cfg.get("aux_tasks", AUX_TASKS), start=1):
+            loss = loss + aw * bce(outs[:, i], auxb[t])
         wr = (auxb["play_time_ms"] / auxb["duration_ms"].clamp(1)).clamp(0, 2)
-        loss = loss + 0.5 * nn.functional.huber_loss(outs[:, -1], wr)
+        loss = loss + self.cfg.get("wr_weight", 0.5) * nn.functional.huber_loss(outs[:, -1], wr)
         return loss
 
     def _score(self, Xb):
@@ -254,8 +287,8 @@ class _MultiTask(_TorchRec):
         if X_val is None or not self.cfg.get("head_grid", True):
             return
         best = (self._val_primary(self.predict(X_val, groups_val)), None)
-        for c in (0.0, 0.25, 0.5):
-            for w in (0.0, 0.25, 0.5):
+        for c in (-0.25, 0.0, 0.25, 0.5):
+            for w in (0.0, 0.25, 0.5, 0.75):
                 if c == w == 0.0:
                     continue
                 self.head_weights = {"click": c, "wr": w}

@@ -204,14 +204,14 @@ def _manifest(paths: list[Path], out: Path) -> None:
     for p in sorted(paths):
         h = hashlib.sha256(p.read_bytes()).hexdigest()
         lines.append(f"{h} *{p.name}")
-    out.write_text("\n".join(lines) + "\n")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _check_manifest(manifest: Path, base: Path) -> list[str]:
     errors = []
     if not manifest.exists():
         return [f"missing {manifest}"]
-    for line in manifest.read_text().splitlines():
+    for line in manifest.read_text(encoding="utf-8").splitlines():
         h, name = line.split(" *")
         p = base / name
         if not p.exists():
@@ -221,23 +221,48 @@ def _check_manifest(manifest: Path, base: Path) -> list[str]:
     return errors
 
 
+SAMPLE_27K_MOD = 24  # 27k policy: keep users with user_id % 24 == 0 (~4% of 27k users,
+#                      ~13M of 322M rows) — deterministic, documented, recorded in run.json
+
+
+def _log_files(dataset: str) -> list[Path]:
+    rd = raw_dir()
+    if dataset == "27k":  # the 27K logs ship in parts; date filtering restores splits
+        files = (sorted(rd.glob("log_standard_4_08_to_4_21_27k*.csv"))
+                 + sorted(rd.glob("log_standard_4_22_to_5_08_27k*.csv")))
+        if not files:
+            raise FileNotFoundError(f"no 27k log files under {rd}")
+        return files
+    return [rd / f for f in LOG_FILES[dataset]]
+
+
 def build(dataset: str = "pure") -> None:
     rd, cd = raw_dir(), cache_dir(dataset)
     cd.mkdir(parents=True, exist_ok=True)
-    log1, log2 = LOG_FILES[dataset]
     read = {"schema_overrides": LOG_SCHEMA}
-    logs = pl.concat([pl.read_csv(rd / log1, **read), pl.read_csv(rd / log2, **read)])
     sizes = {}
-    for split, (lo, hi) in SPLITS.items():
-        frame = logs.filter(pl.col("date").is_between(lo, hi))
-        if split == "test":
-            frame = frame.drop(FEEDBACK_COLS)
-        frame.write_parquet(cd / f"{split}.parquet")
-        sizes[split] = frame.height
+    if dataset == "pure":
+        logs = pl.concat([pl.read_csv(f, **read) for f in _log_files(dataset)])
+        for split, (lo, hi) in SPLITS.items():
+            frame = logs.filter(pl.col("date").is_between(lo, hi))
+            if split == "test":
+                frame = frame.drop(FEEDBACK_COLS)
+            frame.write_parquet(cd / f"{split}.parquet")
+            sizes[split] = frame.height
+    else:  # 1k (11.7M rows) and 27k stream via lazy scans; order-preserving pipeline
+        lf = pl.concat([pl.scan_csv(f, **read) for f in _log_files(dataset)])
+        if dataset == "27k":
+            lf = lf.filter(pl.col("user_id") % SAMPLE_27K_MOD == 0)
+        for split, (lo, hi) in SPLITS.items():
+            part = lf.filter(pl.col("date").is_between(lo, hi))
+            if split == "test":
+                part = part.drop(FEEDBACK_COLS)
+            part.sink_parquet(cd / f"{split}.parquet")
+            sizes[split] = pl.scan_parquet(cd / f"{split}.parquet").select(pl.len()).collect().item()
     user_f, video_b, video_s = STATIC_FILES[dataset]
     for key, fname in (("user", user_f), ("video_basic", video_b), ("video_stat", video_s)):
         pl.read_csv(rd / fname, infer_schema_length=None).write_parquet(cd / f"{key}.parquet")
-    (cd / "sizes.json").write_text(json.dumps(sizes))
+    (cd / "sizes.json").write_text(json.dumps(sizes), encoding="utf-8")
     _manifest(
         [cd / f"{s}.parquet" for s in SPLITS] + [cd / f"{k}.parquet" for k in ("user", "video_basic", "video_stat")],
         cd / "MANIFEST.sha256",
@@ -287,7 +312,7 @@ def _parity_rungs(errors: list[str]) -> dict:
     pj = cache_dir("pure") / "parity.json"
     key = _parity_key()
     if pj.exists():
-        cached = json.loads(pj.read_text())
+        cached = json.loads(pj.read_text(encoding="utf-8"))
         if cached.get("key") == key:
             return cached
     val = load("val")
@@ -300,7 +325,7 @@ def _parity_rungs(errors: list[str]) -> dict:
 
     fm = _run_fm_baseline()
     result = {"key": key, "fm": fm, "random": rand, "popularity": popv}
-    pj.write_text(json.dumps(result, indent=1))
+    pj.write_text(json.dumps(result, indent=1), encoding="utf-8")
     return result
 
 
@@ -312,7 +337,7 @@ def verify(dataset: str = "pure") -> int:
 
     if not errors:
         expected = (SPLIT_SIZES[dataset] if _is_real_pure_root(dataset) and dataset in SPLIT_SIZES
-                    else json.loads((cd / "sizes.json").read_text()))
+                    else json.loads((cd / "sizes.json").read_text(encoding="utf-8")))
         for split in SPLITS:
             h = pl.read_parquet(cd / f"{split}.parquet").height
             if h != expected[split]:
