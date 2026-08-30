@@ -204,7 +204,10 @@ Phase V2.3: scored run + deliverables
 - [x] pushed, tagged v2.0-release
 
 Phase V2.4 (optional): 1k bonus run
-- [ ] run completed and deliverables updated — or explicitly skipped, noted here
+- [x] run completed and deliverables updated — or explicitly skipped, noted here
+  (attempted 2026-08-30 as aug30-1k with 900 s budget: BLOCKED by the frozen
+  pure-only submit checker — runs/aug30-1k/BLOCKED.md + HARNESS_BUGS.md; 1k cache
+  rebuilt in verified raw order as salvage; deliverables note the blocked run)
 
 ## Appendix: goal prompt for the new chat
 

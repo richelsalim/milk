@@ -38,7 +38,11 @@ Wired end to end (streaming cache build, verified splits: 5,055,984 / 2,524,980 
 4,132,081 rows). `lgbm_lambdarank` reaches **validation primary 0.6573 (GAUC 0.6888 /
 nDCG@5 0.6257)** in 356 s. No official 1k baseline is published, so no delta is
 claimed. KuaiRand-27k: loader with a documented deterministic user-sampling policy
-(`prepare.SAMPLE_27K_MOD`), not run end to end.
+(`prepare.SAMPLE_27K_MOD`), not run end to end. A scored 1k harness run was attempted
+(2026-08-30, `runs/aug30-1k/`) and is BLOCKED by a frozen-layer limitation — the
+starter kit's submission checker only understands Pure — with the full diagnosis and
+an owner-fix suggestion in `runs/aug30-1k/HARNESS_BUGS.md`; the 1k split cache was
+order-verified and rebuilt in the process.
 
 ## Resource usage
 

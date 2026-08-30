@@ -103,3 +103,9 @@ Running log of decisions made without confirmation (IMPLEMENTATION.md section 0)
   Recorded in config.json per iteration. The harness's baseline row (fm_official on Pure,
   0.6016) is hard-coded in the frozen layer, so the 1k ledger's delta_vs_baseline column is
   cosmetic — noted in the run's notes.md; no official 1k baseline exists to compare against.
+- **1k scored run blocked, not worked around**: the frozen kit's checker is pure-only
+  (data.py hard-codes *_pure.csv), so every 1k KEEP fails validation. Considered and
+  rejected: renaming 1k raw files into a pure-named parallel root (data tampering;
+  verify's parity gate would also refuse it). Wrote BLOCKED.md + HARNESS_BUGS.md per
+  program.md, kept the order-verified cache rebuild, moved on. v1's 1k zoo numbers
+  stand (internally consistent training/eval).
