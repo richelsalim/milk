@@ -41,13 +41,19 @@ def _sigmoid(x):
 class FMRec(Recommender):
     """Numpy port of starter_kit/baseline.py FM (k=16, lr=0.001, Adam, batch 8192,
     <=40 epochs, patience 4). Consumes the fm5 spec's train-vocab codes; internally
-    offsets fields into one table exactly like the kit's encode()."""
+    offsets fields into one table exactly like the kit's encode(). Config `fields`
+    (v2.2) selects a named column subset so the FM can ride a wider spec inside a
+    blend (every named column must have a field_dims entry, e.g. the id_ block)."""
 
     def fit(self, X_train, y_train, groups_train, aux_train=None,
             X_val=None, y_val=None, groups_val=None, time_budget=300, seed=0):
         cfg = {"k": 16, "lr": 0.001, "l2": 1e-6, "epochs": 40, "batch": 8192,
                "patience": 4, **self.config}
-        dims = [self.meta["field_dims"][c] for c in self.meta["columns"]]
+        names = cfg.get("fields") or self.meta["columns"]
+        self.cols_ = None if names == self.meta["columns"] else [self._col(c) for c in names]
+        if self.cols_ is not None:
+            X_train = X_train[:, self.cols_]
+        dims = [self.meta["field_dims"][c] for c in names]
         self.offsets = np.cumsum([0] + dims[:-1]).astype(np.int64)
         dim = int(sum(dims))
         Xtr = X_train.astype(np.int64) + self.offsets
@@ -112,6 +118,8 @@ class FMRec(Recommender):
         return self.b + self.W[Xoff].sum(1) + inter, E, S
 
     def predict(self, X, groups):
+        if getattr(self, "cols_", None) is not None:
+            X = X[:, self.cols_]
         Xoff = X.astype(np.int64) + self.offsets
         out = [self._logits(Xoff[i:i + 200_000])[0] for i in range(0, len(Xoff), 200_000)]
         return np.concatenate(out).astype(np.float32)

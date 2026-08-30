@@ -86,6 +86,31 @@ def test_recency_weights_change_lgbm_training(inputs):
     assert not np.allclose(preds[0], preds[1])
 
 
+def test_blend_weight_grid_fields_seed_offset(inputs):
+    from recsys.models import SNAP
+    from recsys.models.blend import Blend
+    Xtr, meta, gtr, Xva, gva, ytr, yva, aux = inputs
+    grid = [(0.2, 0.4, 0.4), (0.0, 0.5, 0.5), (0.34, 0.33, 0.33)]
+    m = Blend(meta=meta, mode="rank_avg", bases=[
+        {"model": "fm", "cfg": {"fields": ["id_user", "id_video", "id_author",
+                                           "id_tag", "id_music"]},
+         "share": 0.2, "weight": 0.2},
+        {"model": "ple", "cfg": {**SNAP, "epochs": 2}, "share": 0.4, "weight": 0.4},
+        {"model": "ple", "cfg": {**SNAP, "epochs": 2}, "share": 0.4, "weight": 0.4,
+         "seed_offset": 1},
+    ], weight_grid=grid)
+    m.fit(Xtr, ytr, gtr, aux_train=aux, X_val=Xva, y_val=yva, groups_val=gva,
+          time_budget=20, seed=0)
+    assert tuple(m.info["weight_grid"]["chosen"]) in grid
+    np.testing.assert_allclose(m.weights, m.info["weight_grid"]["chosen"])
+    # the two ple bases really differ (seed offset) and fm ran on the id subset
+    p1 = m.models[1][1].predict(Xva, gva)
+    p2 = m.models[2][1].predict(Xva, gva)
+    assert not np.allclose(p1, p2)
+    assert len(m.models[0][1].cols_) == 5
+    assert np.isfinite(m.predict(Xva, gva)).all()
+
+
 def test_determinism_with_v2_knobs(inputs):
     a, (Xva, gva) = _fit_ple(inputs, snapshot_k=3, recency_half_life_days=3)
     b, _ = _fit_ple(inputs, snapshot_k=3, recency_half_life_days=3)

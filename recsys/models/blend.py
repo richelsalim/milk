@@ -1,8 +1,13 @@
 """Blend rung: weighted rank-average of registered models, or a linear stacker fitted
-on out-of-fold training-window predictions built by date folds. Never fitted on
-validation (the rank weights and per-base budget shares are fixed configuration)."""
+on out-of-fold training-window predictions built by date folds. Budget shares are
+fixed configuration; the rank weights may optionally be picked from a small
+`weight_grid` on validation (v2.2 — same precedent as the multitask head grid:
+a handful of metric evaluations on already-computed predictions, cost recorded
+in info)."""
 
 from __future__ import annotations
+
+import time
 
 import numpy as np
 
@@ -18,10 +23,13 @@ def _ranks(a: np.ndarray) -> np.ndarray:
 
 class Blend(Recommender):
     """config:
-    - bases: [{model, cfg, share, weight}] (share = fraction of the time budget,
-      weight = rank-average weight), or legacy models: [name, ...] with equal shares.
+    - bases: [{model, cfg, share, weight, seed_offset}] (share = fraction of the time
+      budget, weight = rank-average weight, seed_offset for bagging same-model bases),
+      or legacy models: [name, ...] with equal shares.
     - mode: "rank_avg" (default) or "stack" (date-fold OOF linear stacker).
     - folds: date folds for stack mode (default 3).
+    - weight_grid: optional list of weight tuples (one per base); the best on
+      validation replaces the configured weights (rank_avg mode only).
     """
 
     def _bases(self):
@@ -38,6 +46,7 @@ class Blend(Recommender):
                 "cfg": {**default_cfg, **b.get("cfg", {})},
                 "share": b.get("share", 1.0 / len(cfg_bases)),
                 "weight": b.get("weight", 1.0 / len(cfg_bases)),
+                "seed_offset": b.get("seed_offset", 0),
             })
         return out
 
@@ -86,8 +95,22 @@ class Blend(Recommender):
             m = b["cls"](meta=self.meta, **b["cfg"])
             m.fit(X_train, y_train, groups_train, aux_train=aux_train,
                   X_val=X_val, y_val=y_val, groups_val=groups_val,
-                  time_budget=budget, seed=seed)
+                  time_budget=budget, seed=seed + b["seed_offset"])
             self.models.append((b["name"], m))
+        grid = self.config.get("weight_grid")
+        if mode == "rank_avg" and grid and X_val is not None:
+            t0 = time.time()
+            ranks = [_ranks(m.predict(X_val, groups_val).astype(np.float64))
+                     for _, m in self.models]
+            best = (-1.0, tuple(self.weights))
+            for wts in grid:
+                p = self._val_primary(np.sum([w * r for w, r in zip(wts, ranks)], axis=0))
+                if p > best[0] + 1e-5:
+                    best = (p, tuple(wts))
+            self.weights = np.asarray(best[1], dtype=np.float64)
+            self.info["weight_grid"] = {"combos": len(grid), "chosen": list(best[1]),
+                                        "primary": round(best[0], 6),
+                                        "sec": round(time.time() - t0, 1)}
         self.info["rounds_used"] = {n: m.info.get("rounds_used") for n, m in self.models}
         self.info["bases"] = [{k: v for k, v in b.items() if k not in ("cls",)} for b in bases]
         return self
