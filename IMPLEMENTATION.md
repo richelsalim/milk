@@ -429,11 +429,11 @@ Phase 4: autoresearch loop
 - [x] reports/phase4.md written; pushed, tagged phase-4
 
 Phase 5: scripted dry run and fault injection
-- [ ] train_stub.py with the QUALITY knob; driver runs in a temporary clone
-- [ ] `python -m tests.scripted_agent.run --fixture small` exits 0 with CONVERGED at iteration 8 and all assertions matched
-- [ ] `--fixture full` mode implemented
-- [ ] tests/test_fault_injection.py green
-- [ ] reports/phase5.md written; pushed, tagged phase-5
+- [x] train_stub.py with the QUALITY knob; driver runs in a temporary clone
+- [x] `python -m tests.scripted_agent.run --fixture small` exits 0 with CONVERGED at iteration 8 and all assertions matched (34/34)
+- [x] `--fixture full` mode implemented (rehearsed: 11/11, exit 0)
+- [x] tests/test_fault_injection.py green
+- [x] reports/phase5.md written; pushed, tagged phase-5
 
 Phase 6: deliverables and bonus datasets
 - [ ] harness report writes results_table.md, resources.md, interventions.md, iteration_log.md, trajectory.png
