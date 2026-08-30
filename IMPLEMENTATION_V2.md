@@ -197,7 +197,7 @@ Phase V2.2: blend v2
 - [x] reports/v2.md section; pushed, tagged v2-phase-2
 
 Phase V2.3: scored run + deliverables
-- [ ] preflight green (verify, pytest, clean main)
+- [x] preflight green (verify, pytest, clean main)
 - [ ] scored run completed to STOP per program.md; interventions logged (target 0)
 - [ ] finish with real token numbers; report generated
 - [ ] deliverables/ + README headlines refreshed from the run ledger; final.csv replaced
