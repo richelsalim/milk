@@ -37,6 +37,11 @@ class Driver:
                     "KUAIRAND_WATCHDOG_GRACE_SEC": "3" if self.mode == "small" else "120",
                     "GIT_AUTHOR_NAME": "scripted", "GIT_AUTHOR_EMAIL": "s@s",
                     "GIT_COMMITTER_NAME": "scripted", "GIT_COMMITTER_EMAIL": "s@s"}
+        if (self.ws / "runs" / "scripted").exists():
+            # a previous scripted ledger may be committed in the repo (phase 6 copies it
+            # under runs/); reset it in the clone or events.jsonl counts double up
+            self.git("rm", "-r", "-q", "runs/scripted")
+            self.git("commit", "-qm", "scripted: reset prior run ledger")
 
     def git(self, *args) -> str:
         return subprocess.run(["git", "-C", str(self.ws), *args], capture_output=True,
