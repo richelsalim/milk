@@ -418,15 +418,15 @@ Phase 3: model zoo and train.py
 - [x] reports/phase3.md written; pushed, tagged phase-3
 
 Phase 4: autoresearch loop
-- [ ] harness start, iterate, abandon, revert, status, intervene, finish
-- [ ] watchdog (timeout, RSS cap), metrics recomputed by the harness, KEEP writes a checked submission
-- [ ] git ops: one commit per iteration, clean tree after iterate
-- [ ] convergence.py (wrapping the starter kit rule if it ships) plus cap and ceiling; divergence guard
-- [ ] schemas for results.tsv, metrics.json, events.jsonl, run.json, resources.json
-- [ ] program.md written verbatim from Appendix B
-- [ ] tests/test_harness.py green
-- [ ] smoke run: one iteration matches the fm rung, final.csv passes --check, smoke branch deleted
-- [ ] reports/phase4.md written; pushed, tagged phase-4
+- [x] harness start, iterate, abandon, revert, status, intervene, finish
+- [x] watchdog (timeout, RSS cap), metrics recomputed by the harness, KEEP writes a checked submission
+- [x] git ops: one commit per iteration, clean tree after iterate
+- [x] convergence.py (wrapping the starter kit rule if it ships) plus cap and ceiling; divergence guard
+- [x] schemas for results.tsv, metrics.json, events.jsonl, run.json, resources.json
+- [x] program.md written verbatim from Appendix B
+- [x] tests/test_harness.py green
+- [x] smoke run: one iteration matches the fm rung, final.csv passes --check, smoke branch deleted
+- [x] reports/phase4.md written; pushed, tagged phase-4
 
 Phase 5: scripted dry run and fault injection
 - [ ] train_stub.py with the QUALITY knob; driver runs in a temporary clone
