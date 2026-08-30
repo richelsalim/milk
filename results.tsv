@@ -1,1 +1,2 @@
 iter	commit	status	primary	gauc	ndcg5	delta_vs_baseline	train_sec	seed	description
+1		keep	0.6016	0.6674	0.5358	+0.0000	46.0	0	baseline reproduction

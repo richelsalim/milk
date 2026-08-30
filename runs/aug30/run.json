@@ -19,15 +19,20 @@
   "primary": 0.6016
  },
  "status": "running",
- "best": null,
- "last_kept_iter": null,
- "next_iter": 1,
+ "best": {
+  "iter": 1,
+  "primary": 0.6016148563428039
+ },
+ "last_kept_iter": 1,
+ "next_iter": 2,
  "attempt": 1,
  "consecutive_bad": 0,
- "scored_primaries": [],
+ "scored_primaries": [
+  0.6016148563428039
+ ],
  "counts": {
-  "scored": 0,
-  "kept": 0,
+  "scored": 1,
+  "kept": 1,
   "reverted": 0,
   "abandoned": 0
  }
