@@ -210,9 +210,90 @@ def hist_item(rows, hist, tables, info):
     return out
 
 
+def cross(rows, hist, tables, info):
+    """User x item interaction statistics that survive within-user ranking.
+    Leakage: strictly-past for train, full training window for val/test."""
+    split, g = info["split"], info["gmean"]
+    out = None
+    for keys, prefix in ((["user_id", "_author"], "x_ua"), (["user_id", "_tag1"], "x_ut"),
+                         (["user_id", "_dur_bucket"], "x_ud")):
+        values = {f"{prefix}_n": pl.lit(1.0), f"{prefix}_pos": pl.col("long_view").cast(pl.Float64)}
+        if prefix == "x_ud":
+            values[f"{prefix}_wr"] = pl.col("_wr")
+        s = _key_sums(rows, hist, split, keys, values).fill_null(0)
+        sel = [
+            pl.col(f"{prefix}_n").alias(f"{prefix}_impressions"),
+            _smoothed(f"{prefix}_pos", f"{prefix}_n", g).alias(f"{prefix}_lv_rate"),
+        ]
+        if prefix == "x_ud":
+            sel.append((pl.col(f"{prefix}_wr") / (pl.col(f"{prefix}_n") + 1)).alias(f"{prefix}_mean_wr"))
+        s = s.select("_idx", *sel)
+        out = s if out is None else out.join(s, on="_idx")
+    values = {"x_vd_n": pl.lit(1.0), "x_vd_pos": pl.col("long_view").cast(pl.Float64)}
+    s = _key_sums(rows, hist, split, ["video_id", "_uad"], values).fill_null(0)
+    out = out.join(
+        s.select("_idx", _smoothed("x_vd_pos", "x_vd_n", g).alias("x_vd_lv_rate")), on="_idx"
+    )
+    return out
+
+
+def target_enc(rows, hist, tables, info):
+    """Heavily smoothed target encoding of high-cardinality ids (prior=100).
+    Leakage: time-safe by construction — strictly-past cumulative encoding for train
+    (the per-row limit of time-ordered folds), full training window for val/test."""
+    g = info["gmean"]
+    out = None
+    for key, name in (("video_id", "te_video"), ("_author", "te_author"),
+                      ("_music", "te_music"), ("_tag1", "te_tag")):
+        values = {"n": pl.lit(1.0), "pos": pl.col("long_view").cast(pl.Float64)}
+        s = _key_sums(rows, hist, info["split"], [key], values).fill_null(0)
+        s = s.select("_idx", _smoothed("pos", "n", g, prior=100.0).alias(name))
+        out = s if out is None else out.join(s, on="_idx")
+    return out
+
+
+def ids(rows, hist, tables, info):
+    """Train-vocabulary integer codes for embedding models (user, video, author, tag,
+    music), UNK = last index per field. Leakage: none — identity columns only."""
+    out = rows.select("_idx")
+    for col, name in (("user_id", "id_user"), ("video_id", "id_video"),
+                      ("_author", "id_author"), ("_tag1", "id_tag"), ("_music", "id_music")):
+        vocab = info["vocabs"][col]
+        out = out.with_columns(
+            rows[col].replace_strict(vocab, default=len(vocab)).alias(name)
+        )
+    return out
+
+
+def seq(rows, hist, tables, info):
+    """Last SEQ_LEN impressions of the user before this one (video/author/tag ids,
+    duration, watch ratio), padded with -1/0. Leakage: shifted strictly-past rows for
+    train; the user's last SEQ_LEN training-window rows for val/test (never rows of
+    the evaluation split — no cross-row reads inside a split)."""
+    feats = {"video_id": ("sq_v", -1), "_author": ("sq_a", -1), "_tag1": ("sq_t", -1),
+             "duration_ms": ("sq_d", 0.0), "_wr": ("sq_w", 0.0)}
+    if info["split"] == "train":
+        work = rows.select("_idx", "user_id", "time_ms", *feats).sort(["user_id", "time_ms", "_idx"])
+        cols = []
+        for col, (pfx, fill) in feats.items():
+            cols += [pl.col(col).shift(k).over("user_id").fill_null(fill).alias(f"{pfx}{k}")
+                     for k in range(1, SEQ_LEN + 1)]
+        return work.with_columns(cols).sort("_idx").select("_idx", *[c.meta.output_name() for c in cols])
+    tail = (hist.sort(["user_id", "time_ms"]).group_by("user_id", maintain_order=True)
+            .agg([pl.col(c).tail(SEQ_LEN).alias(c) for c in feats]))
+    cols = []
+    for col, (pfx, fill) in feats.items():
+        cols += [pl.col(col).list.get(-k, null_on_oob=True).fill_null(fill).alias(f"{pfx}{k}")
+                 for k in range(1, SEQ_LEN + 1)]
+    tail = tail.select("user_id", *cols)
+    return (rows.select("_idx", "user_id").join(tail, on="user_id", how="left")
+            .sort("_idx").drop("user_id").fill_null(0))
+
+
 BLOCKS = {
     "ctx": ctx, "item_static": item_static, "item_stats": item_stats,
     "user_static": user_static, "hist_user": hist_user, "hist_item": hist_item,
+    "cross": cross, "target_enc": target_enc, "ids": ids, "seq": seq,
 }
 
 
