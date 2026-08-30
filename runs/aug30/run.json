@@ -24,17 +24,18 @@
   "primary": 0.6075055731227548
  },
  "last_kept_iter": 2,
- "next_iter": 3,
+ "next_iter": 4,
  "attempt": 1,
- "consecutive_bad": 0,
+ "consecutive_bad": 1,
  "scored_primaries": [
   0.6016148563428039,
-  0.6075055731227548
+  0.6075055731227548,
+  0.606670241600487
  ],
  "counts": {
-  "scored": 2,
+  "scored": 3,
   "kept": 2,
-  "reverted": 0,
+  "reverted": 1,
   "abandoned": 0
  }
 }

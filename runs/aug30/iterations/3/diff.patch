@@ -1,0 +1,15 @@
+diff --git a/recsys/models/__init__.py b/recsys/models/__init__.py
+index 6a10259..70705cb 100644
+--- a/recsys/models/__init__.py
++++ b/recsys/models/__init__.py
+@@ -35,7 +35,9 @@ MODELS = {
+     # run to run. Shares leave ~40 s headroom over the pinned epochs.
+     "blend": (Blend, {"mode": "rank_avg", "bases": [
+         {"model": "deepfm", "cfg": {**SNAP, "epochs": 6}, "share": 0.45, "weight": 0.35},
+-        {"model": "ple", "cfg": {**SNAP, "epochs": 3}, "share": 0.55, "weight": 0.65},
++        {"model": "ple", "cfg": {**SNAP, "epochs": 4,
++                         "aux_tasks": ["is_click", "is_like"]},
++         "share": 0.55, "weight": 0.65},
+     ], "weight_grid": [
+         (0.30, 0.70), (0.35, 0.65), (0.40, 0.60), (0.45, 0.55), (0.25, 0.75),
+         (0.50, 0.50),

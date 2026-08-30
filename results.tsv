@@ -1,3 +1,4 @@
 iter	commit	status	primary	gauc	ndcg5	delta_vs_baseline	train_sec	seed	description
 1	57afab2	keep	0.6016	0.6674	0.5358	+0.0000	46.0	0	baseline reproduction
-2		keep	0.6075	0.6751	0.5399	+0.0059	286.9	0	diverse snapshot blend deepfm+ple, weight grid
+2	526af02	keep	0.6075	0.6751	0.5399	+0.0059	286.9	0	diverse snapshot blend deepfm+ple, weight grid
+3		revert	0.6067	0.6743	0.5391	+0.0051	267.5	0	ple aux-head pruning buys 4th epoch in blend
