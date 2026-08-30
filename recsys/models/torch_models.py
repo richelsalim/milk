@@ -74,7 +74,8 @@ class _Trunk(nn.Module):
 
 class _TorchRec(Recommender):
     defaults = {"dim": 16, "lr": 1e-3, "batch": 4096, "epochs": 30, "patience": 2,
-                "subsample": 500_000, "loss": "bce", "weight_decay": 1e-6}
+                "subsample": 500_000, "loss": "bce", "weight_decay": 1e-6,
+                "snapshot_k": 0, "recency_half_life_days": None}
 
     def _build(self, meta, X_train):
         raise NotImplementedError
@@ -82,8 +83,9 @@ class _TorchRec(Recommender):
     def _forward(self, X):
         raise NotImplementedError
 
-    def _loss(self, out, yb, seg, auxb):
-        return LOSSES[self.cfg["loss"]](out, yb, seg)
+    def _loss(self, out, yb, seg, auxb, wb=None):
+        fn = LOSSES[self.cfg["loss"]]
+        return bce(out, yb, seg, wb) if fn is bce else fn(out, yb, seg)
 
     def fit(self, X_train, y_train, groups_train, aux_train=None,
             X_val=None, y_val=None, groups_val=None, time_budget=300, seed=0):
@@ -104,38 +106,54 @@ class _TorchRec(Recommender):
         ys = torch.tensor(y_train[order], dtype=torch.float32)
         auxs = {k: torch.tensor(v[order], dtype=torch.float32)
                 for k, v in (aux_train or {}).items()}
+        w_np = self._recency_weights(X_train)
+        if w_np is not None:
+            w_np = w_np[order]
+            ws = torch.tensor(w_np / w_np.mean(), dtype=torch.float32)
+        else:
+            ws = None
         gs = groups_train[order]
         starts = np.flatnonzero(np.r_[True, gs[1:] != gs[:-1]])
         bounds = np.r_[starts, len(gs)]
+        lens = bounds[1:] - bounds[:-1]  # per-user row counts, fixed for the fit
         self._build(self.meta, X_train[order])
         self.net.to(self.device)
         opt = torch.optim.Adam(self.net.parameters(), lr=cfg["lr"],
                                weight_decay=cfg["weight_decay"])
         deadline = self._deadline(time_budget)
         fixed = cfg.get("rounds")
-        best, best_state, bad, used = -1.0, None, 0, 0
-        snapshots = []  # (primary, state_dict) per epoch, for snapshot averaging
+        k = int(cfg.get("snapshot_k") or 0)
+        best, best_state, best_raw, bad, used = -1.0, None, None, 0, 0
+        snaps = []  # top-k (primary, cached val raw, state_dict), kept sorted desc
         n_users = len(starts)
         for ep in range(1, cfg["epochs"] + 1):
             self.net.train()
             uorder = rng.permutation(n_users)
-            row_batches, cur, size = [], [], 0
-            for u in uorder:
-                cur.append(u)
-                size += bounds[u + 1] - bounds[u]
-                if size >= cfg["batch"]:
-                    row_batches.append(cur)
-                    cur, size = [], 0
-            if cur:
-                row_batches.append(cur)
-            for users in row_batches:
-                idx = np.concatenate([np.arange(bounds[u], bounds[u + 1]) for u in users])
-                seg = np.repeat(np.arange(len(users)), [bounds[u + 1] - bounds[u] for u in users])
+            # one vectorized permutation per epoch; batches gather contiguous slices
+            # of it instead of concatenating per-user aranges every batch (v2.0)
+            ln = lens[uorder]
+            ends = np.cumsum(ln)
+            perm = np.repeat(bounds[uorder] - (ends - ln), ln) + np.arange(int(ends[-1]))
+            cuts, t = [], cfg["batch"]
+            while True:
+                i = int(np.searchsorted(ends, t))
+                if i >= n_users:
+                    break
+                cuts.append(i + 1)
+                t = ends[i] + cfg["batch"]
+            ubounds = [0, *cuts, n_users]
+            for a, b in zip(ubounds[:-1], ubounds[1:]):
+                if a == b:
+                    continue
+                ra, rb = (0 if a == 0 else int(ends[a - 1])), int(ends[b - 1])
+                idx = torch.from_numpy(perm[ra:rb])
                 Xb = Xs[idx].to(self.device)
                 yb = ys[idx].to(self.device)
-                segb = torch.tensor(seg, dtype=torch.int64, device=self.device)
-                auxb = {k: v[idx].to(self.device) for k, v in auxs.items()}
-                loss = self._loss(self._forward(Xb), yb, segb, auxb)
+                segb = torch.tensor(np.repeat(np.arange(b - a), ln[a:b]),
+                                    dtype=torch.int64, device=self.device)
+                auxb = {k2: v[idx].to(self.device) for k2, v in auxs.items()}
+                wb = ws[idx].to(self.device) if ws is not None else None
+                loss = self._loss(self._forward(Xb), yb, segb, auxb, wb)
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
@@ -146,64 +164,77 @@ class _TorchRec(Recommender):
                 if (fixed and ep >= fixed) or time.time() > deadline:
                     break
                 continue
-            primary = self._val_primary(self.predict(X_val, groups_val))
-            if cfg.get("snapshot_k"):
-                snapshots.append((primary, {k: v.detach().clone()
-                                            for k, v in self.net.state_dict().items()}))
+            raw = self._predict_raw(X_val)
+            primary = self._val_primary(self._combine(raw))
+            state = None
+            if k or primary > best + 1e-5:
+                state = {k2: v.detach().clone() for k2, v in self.net.state_dict().items()}
+            if k:
+                snaps.append((primary, raw, state))
+                snaps.sort(key=lambda s: -s[0])
+                del snaps[k:]
             if primary > best + 1e-5:
-                best, bad = primary, 0
-                best_state = {k: v.detach().clone() for k, v in self.net.state_dict().items()}
+                best, bad, best_state, best_raw = primary, 0, state, raw
             else:
                 bad += 1
             if bad >= cfg["patience"] or time.time() > deadline:
                 break
         if best_state is not None:
             self.net.load_state_dict(best_state)
-        k = int(cfg.get("snapshot_k") or 0)
-        if k > 1 and len(snapshots) > 1:
-            # snapshot ensemble: average predictions of the top-k epoch checkpoints,
-            # selected on validation (same information early stopping already uses)
-            snapshots.sort(key=lambda s: -s[0])
-            self._snapshots = [s[1] for s in snapshots[:k]]
-            ens = self._val_primary(self.predict(X_val, groups_val))
+        self._snapshots = None
+        self._val_raw = best_raw  # cached val predictions of the selected configuration
+        if k > 1 and len(snaps) > 1:
+            # snapshot ensemble selected from the CACHED per-epoch val predictions:
+            # one extra metric evaluation, zero extra forward passes (v2.0)
+            ens_raw = np.mean([s[1] for s in snaps], axis=0)
+            ens = self._val_primary(self._combine(ens_raw))
+            self.info["snapshot_ensemble"] = {
+                "k": len(snaps), "primary": round(float(ens), 6),
+                "single_best": round(float(best), 6), "beat_single": bool(ens > best)}
             if ens > best:
                 best = ens
-                self.info["snapshot_ensemble"] = {"k": len(self._snapshots), "primary": ens}
-            else:
-                self._snapshots = None  # single best state wins
+                self._snapshots = [s[2] for s in snaps]
+                self._val_raw = ens_raw
+        if ws is not None:
+            self.info["recency_half_life_days"] = cfg["recency_half_life_days"]
         self.info.update({"rounds_used": used,
                           "best_val_primary": best if best > 0 else None,
                           "config": {k2: v for k2, v in cfg.items()}})
         self._post_fit(X_val, y_val, groups_val)
+        self._val_raw = None  # cache is fit-scoped; keep pickles slim
         return self
 
     def _post_fit(self, X_val, y_val, groups_val):
         pass
+
+    def _combine(self, raw):
+        """Raw network outputs -> ranking scores (multitask heads override)."""
+        return np.asarray(raw, dtype=np.float32)
+
+    @torch.no_grad()
+    def _predict_raw(self, X):
+        """One batched forward pass over X — the only place inference happens."""
+        self.net.eval()
+        out = []
+        for i in range(0, len(X), 65_536):
+            Xb = torch.tensor(X[i:i + 65_536], dtype=torch.float32, device=self.device)
+            out.append(self._forward(Xb).cpu().numpy())
+        return np.concatenate(out)
 
     @torch.no_grad()
     def predict(self, X, groups):
         states = getattr(self, "_snapshots", None)
         if states:
             current = {k: v.detach().clone() for k, v in self.net.state_dict().items()}
-            preds = []
+            raws = []
             for sd in states:
                 self.net.load_state_dict(sd)
-                preds.append(self._predict_once(X))
+                raws.append(self._predict_raw(X))
             self.net.load_state_dict(current)
-            return np.mean(preds, axis=0).astype(np.float32)
-        return self._predict_once(X)
-
-    @torch.no_grad()
-    def _predict_once(self, X):
-        self.net.eval()
-        out = []
-        for i in range(0, len(X), 65_536):
-            Xb = torch.tensor(X[i:i + 65_536], dtype=torch.float32, device=self.device)
-            out.append(self._score(Xb).cpu().numpy())
-        return np.concatenate(out).astype(np.float32)
-
-    def _score(self, Xb):
-        return self._forward(Xb)
+            raw = np.mean(raws, axis=0)
+        else:
+            raw = self._predict_raw(X)
+        return self._combine(raw).astype(np.float32)
 
 
 class DeepFM(_TorchRec):
@@ -267,8 +298,9 @@ class _MultiTask(_TorchRec):
     def tasks(self):
         return ["long_view"] + self.cfg.get("aux_tasks", AUX_TASKS) + ["watch_ratio"]
 
-    def _loss(self, outs, yb, seg, auxb):
-        loss = LOSSES[self.cfg.get("main_loss", "bce")](outs[:, 0], yb, seg)
+    def _loss(self, outs, yb, seg, auxb, wb=None):
+        fn = LOSSES[self.cfg.get("main_loss", "bce")]
+        loss = bce(outs[:, 0], yb, seg, wb) if fn is bce else fn(outs[:, 0], yb, seg)
         aw = self.cfg.get("aux_weight", 0.3)
         for i, t in enumerate(self.cfg.get("aux_tasks", AUX_TASKS), start=1):
             loss = loss + aw * bce(outs[:, i], auxb[t])
@@ -276,23 +308,23 @@ class _MultiTask(_TorchRec):
         loss = loss + self.cfg.get("wr_weight", 0.5) * nn.functional.huber_loss(outs[:, -1], wr)
         return loss
 
-    def _score(self, Xb):
-        outs = self._forward(Xb)
+    def _combine(self, raw):
         w = getattr(self, "head_weights", None)
         if w:
-            return outs[:, 0] + w["click"] * outs[:, 1] + w["wr"] * outs[:, -1]
-        return outs[:, 0]
+            return (raw[:, 0] + w["click"] * raw[:, 1] + w["wr"] * raw[:, -1]).astype(np.float32)
+        return raw[:, 0].astype(np.float32)
 
     def _post_fit(self, X_val, y_val, groups_val):
-        if X_val is None or not self.cfg.get("head_grid", True):
+        if X_val is None or self._val_raw is None or not self.cfg.get("head_grid", True):
             return
-        best = (self._val_primary(self.predict(X_val, groups_val)), None)
+        raw = self._val_raw  # cached val predictions: the grid costs metric evals only
+        best = (self._val_primary(self._combine(raw)), None)
         for c in (-0.25, 0.0, 0.25, 0.5):
             for w in (0.0, 0.25, 0.5, 0.75):
                 if c == w == 0.0:
                     continue
                 self.head_weights = {"click": c, "wr": w}
-                p = self._val_primary(self.predict(X_val, groups_val))
+                p = self._val_primary(self._combine(raw))
                 if p > best[0] + 1e-5:
                     best = (p, {"click": c, "wr": w})
         self.head_weights = best[1]
@@ -355,7 +387,7 @@ class CWM(_TorchRec):
     def _forward(self, X):
         return self.net["mlp"](self.net["trunk"].flat(X)).squeeze(-1)
 
-    def _loss(self, out, yb, seg, auxb):
+    def _loss(self, out, yb, seg, auxb, wb=None):
         r = (auxb["play_time_ms"] / auxb["duration_ms"].clamp(1)).clamp(0, 1)
         censored = r >= 1.0
         under = torch.relu(r - out)
