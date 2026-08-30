@@ -394,8 +394,8 @@ Phase 0: scaffold and constitution
 
 Phase 1: frozen layer, parity, guards, EDA
 - [x] starter_kit/ vendored unchanged, MANIFEST.sha256, NOTES.md
-- [ ] prepare.py: load, tables, evaluate, write_submission, --build, --verify (idempotent)
-- [ ] tests/fixtures/make_fixture.py produces data/cache/fixture_small/
+- [x] prepare.py: load, tables, evaluate, write_submission, --build, --verify (idempotent)
+- [x] tests/fixtures/make_fixture.py produces data/cache/fixture_small/
 - [ ] tests/test_parity.py green (baseline within 0.003 of 0.6016 / 0.6674 / 0.5357; random and popularity rungs in range; toy example)
 - [ ] tests/test_guards.py green
 - [ ] reports/eda.md generated
