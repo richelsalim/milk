@@ -1,0 +1,1 @@
+{"ts": "2026-08-30T23:48:00", "iter": 1, "attempt": 1, "type": "error", "detail": "harness exception: ValueError: \u7b2c 2 \u884c\u5bf9\u9f50\u9519\u8bef\uff1a\u63d0\u4ea4 (0,2723239)\uff0c\u8bc4\u6d4b\u96c6\u7b2c 0 \u884c\u662f (0,3978)", "action": "retry"}
