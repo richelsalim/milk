@@ -388,7 +388,7 @@ Tick only after the gate command passed. Commit the tick with the deliverable.
 Phase 0: scaffold and constitution
 - [x] pyproject.toml, .python-version, .gitignore, Makefile; `uv sync` and `ruff check .` pass
 - [x] CLAUDE.md written verbatim from Appendix A
-- [ ] docs/autoresearch/ vendored (or MISSING.md noted)
+- [x] docs/autoresearch/ vendored (or MISSING.md noted)
 - [ ] reports/decisions.md started; inputs from section 1 verified
 - [ ] pushed, tagged phase-0
 
