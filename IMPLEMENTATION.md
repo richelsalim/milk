@@ -443,5 +443,5 @@ Phase 6: deliverables and bonus datasets
 - [x] reports/phase6.md written; pushed, tagged phase-6
 
 Phase 7: final validation and release
-- [ ] full go/no-go list green, outputs in reports/final.md
-- [ ] main clean, no autoresearch/* branches, tagged v1.0, pushed
+- [x] full go/no-go list green, outputs in reports/final.md
+- [x] main clean, no autoresearch/* branches, tagged v1.0, pushed
