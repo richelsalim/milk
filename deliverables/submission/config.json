@@ -1,0 +1,63 @@
+{
+ "model": "blend",
+ "features": "full",
+ "seed": 0,
+ "time_budget": 300,
+ "config": {
+  "mode": "rank_avg",
+  "bases": [
+   {
+    "model": "deepfm",
+    "cfg": {
+     "patience": 3,
+     "epochs": 60,
+     "subsample": null
+    },
+    "share": 0.45,
+    "weight": 0.35
+   },
+   {
+    "model": "ple",
+    "cfg": {
+     "patience": 3,
+     "epochs": 60,
+     "subsample": null
+    },
+    "share": 0.55,
+    "weight": 0.65
+   }
+  ]
+ },
+ "info": {
+  "rounds_used": {
+   "deepfm": 5,
+   "ple": 4
+  },
+  "bases": [
+   {
+    "name": "deepfm",
+    "cfg": {
+     "patience": 3,
+     "epochs": 60,
+     "subsample": null
+    },
+    "share": 0.45,
+    "weight": 0.35
+   },
+   {
+    "name": "ple",
+    "cfg": {
+     "patience": 3,
+     "epochs": 60,
+     "subsample": null
+    },
+    "share": 0.55,
+    "weight": 0.65
+   }
+  ]
+ },
+ "history_end": 20220421,
+ "n_val": 124909,
+ "n_test": 170588,
+ "total_sec": 319.2
+}

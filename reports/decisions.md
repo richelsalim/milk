@@ -20,6 +20,25 @@ Running log of decisions made without confirmation (IMPLEMENTATION.md section 0)
 - **Extra deps beyond the section-2 list**: `matplotlib` (Phase 6 trajectory.png) and `psutil` (Phase 4 watchdog RSS sampling; Windows has no `resource` module). Both pinned in pyproject.toml.
 - **Convergence rule as shipped**: the starter kit ships the rule as *parameters* (`baseline_scores.json: convergence_rule = {epsilon: 0.002, N: 3}`), not as code. harness/convergence.py implements the rule and reads eps/N defaults from that file.
 
+### 2026-08-30 deliverables pack (post-v1.0)
+- **deliverables/ folder**: organizes the existing reports against the problem
+  statement's four required deliverables and the judging criteria — index, paste-ready
+  Devpost text, iteration-log map, results summary — every number linking to a tracked
+  report; headline (+0.0055 validation primary vs baseline) leads the pack, the root
+  README, and the Devpost text. `deliverables/submission/` carries a genuine validated
+  `final.csv` + 8.5 MB checkpoint from the validation-best blend (retrained for this
+  purpose; reproduced 0.6071 exactly), to be replaced by the scored run's converged
+  submission. Full problem statement re-checked against the build: the "Limits" row
+  contradiction (NDCG@10/Recall@50/click) remains superseded by the starter kit's
+  evaluate.py exactly as NOTES.md records; pretrained weights are allowed by the rules
+  but unused; tokens/wall-clock reporting hooks already exist in `harness finish`.
+- **IMPLEMENTATION_V2.md**: the next build guide (v1 untouched) — budget-free snapshot
+  selection, trainer throughput, recency sample weights, positive-history DIN,
+  three-base blend, then the scored autonomous run and a deliverables refresh. New gate
+  taxonomy: environment-correctness gates block; research-gain targets never block
+  (they get analysis in reports/v2.md). Goal prompt for the executing chat is in its
+  appendix.
+
 ### 2026-08-30 phase 3 (zoo gate resolution)
 - **Gate passed by the blend rung**: after the full-data fix, the best single 300 s model
   is ple at 0.6062 (+0.0046 over fm — 0.0004 short of the +0.005 gate). Snapshot

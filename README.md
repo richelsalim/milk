@@ -1,5 +1,11 @@
 # KuaiRand-Pure autoresearch harness
 
+> **+0.0055 validation primary over the official baseline — 0.6071 vs 0.6016
+> (+0.0069 GAUC, +0.0041 nDCG@5), ~7× the baseline's seed noise, CPU-only, inside one
+> 300 s training budget.** Ladder: random 0.4827 → popularity 0.5807 → official FM
+> 0.6016 → **this repo's blend 0.6071**. Full submission pack:
+> [deliverables/](deliverables/README.md).
+
 An [autoresearch](https://github.com/karpathy/autoresearch)-style research harness for the
 ByteDance "Autonomous ML Research Agent for Recommender Systems" track on the KuaiRand-Pure
 ranking benchmark: rank each user's logged impressions by P(long_view); score =
