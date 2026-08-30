@@ -187,9 +187,9 @@ Phase V2.0: free budget
 - [x] reports/v2.md section; pushed, tagged v2-phase-0
 
 Phase V2.1: positive-history attention
-- [ ] seq_pos block + full_seqpos spec, time-safety tests green
-- [ ] din_lite history=positive benched
-- [ ] reports/v2.md section; pushed, tagged v2-phase-1
+- [x] seq_pos block + full_seqpos spec, time-safety tests green
+- [x] din_lite history=positive benched
+- [x] reports/v2.md section; pushed, tagged v2-phase-1
 
 Phase V2.2: blend v2
 - [ ] three-base candidates benched within one 300 s budget; weight grid on validation

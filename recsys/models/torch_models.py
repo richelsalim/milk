@@ -36,7 +36,7 @@ class _Trunk(nn.Module):
     """Embeds every categorical column (+1 shift so -1 fills hit pad slot 0),
     standardizes the dense columns; forward -> (embeds (B, n_cat, dim), dense (B, n_dense))."""
 
-    def __init__(self, meta, X_train, dim=16, exclude_prefix=("sq_",)):
+    def __init__(self, meta, X_train, dim=16, exclude_prefix=("sq_", "sp_")):
         super().__init__()
         cols = meta["columns"]
         self.cat_idx = [i for i in meta["categorical_idx"]
@@ -395,14 +395,16 @@ class CWM(_TorchRec):
 
 
 class DINLite(_TorchRec):
-    """Target attention over the seq block (last-20 video/author ids) on top of dcnv2.
-    Requires the full_seq spec."""
+    """Target attention over the last-20 history ids on top of dcnv2. Config
+    history="all" attends the sq_ block (full_seq spec); "positive" attends the
+    sp_ block of long_view==1 rows only (full_seqpos spec, v2.1)."""
 
     def _build(self, meta, X_train):
+        pfx = {"all": "sq", "positive": "sp"}[self.cfg.get("history", "all")]
         trunk = _Trunk(meta, X_train, dim=self.cfg["dim"])
         cols = meta["columns"]
-        self.vcols = [cols.index(f"sq_v{k}") for k in range(1, 21)]
-        self.acols = [cols.index(f"sq_a{k}") for k in range(1, 21)]
+        self.vcols = [cols.index(f"{pfx}_v{k}") for k in range(1, 21)]
+        self.acols = [cols.index(f"{pfx}_a{k}") for k in range(1, 21)]
         self.v_emb_i = trunk.cat_idx.index(cols.index("id_video"))
         self.a_emb_i = trunk.cat_idx.index(cols.index("id_author"))
         d = self.cfg["dim"]

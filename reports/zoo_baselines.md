@@ -48,3 +48,4 @@
 | ple_rhl7 | 0.6058 | 0.6731 | 0.5385 | 302 | 3247 | full | v2.0 recency grid |
 | lgbm_rhl3 | 0.5963 | 0.6600 | 0.5326 | 164 | 2780 | full | v2.0 recency grid |
 | lgbm_rhl7 | 0.5995 | 0.6650 | 0.5340 | 129 | 2806 | full | v2.0 recency grid |
+| din_pos | 0.6045 | 0.6718 | 0.5373 | 299 | 5338 | full_seqpos | v2.1 positive-history attention |
