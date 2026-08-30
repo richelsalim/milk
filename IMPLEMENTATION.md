@@ -402,11 +402,11 @@ Phase 1: frozen layer, parity, guards, EDA
 - [x] reports/phase1.md written; pushed, tagged phase-1
 
 Phase 2: feature layer
-- [ ] spec.py with cache; specs fm5, full, full_nostats
-- [ ] blocks ctx, item_static (+ item_stats), user_static, hist_user, hist_item (+ decayed), cross, seq, target_enc
-- [ ] tests/test_features.py green (time safety, brute-force equality, no labels, group order, under 60 s, deterministic)
-- [ ] recsys/features/README.md written
-- [ ] reports/phase2.md written; pushed, tagged phase-2
+- [x] spec.py with cache; specs fm5, full, full_nostats
+- [x] blocks ctx, item_static (+ item_stats), user_static, hist_user, hist_item (+ decayed), cross, seq, target_enc
+- [x] tests/test_features.py green (time safety, brute-force equality, no labels, group order, under 60 s, deterministic)
+- [x] recsys/features/README.md written
+- [x] reports/phase2.md written; pushed, tagged phase-2
 
 Phase 3: model zoo and train.py
 - [ ] base.py, registry, losses.py
