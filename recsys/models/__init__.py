@@ -3,7 +3,7 @@
 from recsys.models.base import Recommender  # noqa: F401
 from recsys.models.classic import FMRec, PopularityRec, RandomRec
 from recsys.models.gbm import LGBMLambdarank, LGBMPointwise
-from recsys.models.torch_models import CWM, PLE, DCNv2, DeepFM, MMoE
+from recsys.models.torch_models import CWM, PLE, DCNv2, DeepFM, DINLite, MMoE
 
 MODELS = {
     "random": (RandomRec, {}, "fm5"),
@@ -16,5 +16,6 @@ MODELS = {
     "mmoe": (MMoE, {}, "full"),
     "ple": (PLE, {}, "full"),
     "cwm": (CWM, {}, "full"),
+    "din_lite": (DINLite, {}, "full_seq"),
                       "mode": "stack", "folds": 3}, "full"),
 }
