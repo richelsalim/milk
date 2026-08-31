@@ -1,24 +1,46 @@
 # KuaiRand-Pure autoresearch harness
 
-> **+0.0059 validation primary over the official baseline — 0.6075 vs 0.6016
-> (+0.0077 GAUC, +0.0042 nDCG@5), ~7× the baseline's seed noise, CPU-only, inside one
-> 300 s training budget — produced by the first scored autonomous run (`aug30`:
-> 5 iterations to convergence, 0 manual interventions).** Ladder: random 0.4827 →
-> popularity 0.5807 → official FM 0.6016 → **this repo's blend 0.6075**. Full
-> submission pack: [deliverables/](deliverables/README.md).
+## Overview
 
-An [autoresearch](https://github.com/karpathy/autoresearch)-style research harness for the
-ByteDance "Autonomous ML Research Agent for Recommender Systems" track on the KuaiRand-Pure
-ranking benchmark: rank each user's logged impressions by P(long_view); score =
-mean(GAUC, nDCG@5) computed only by the organizer's evaluate.py; beat the official FM
-baseline (validation primary 0.6016) autonomously, with auditable per-iteration logs.
+This project implements an autoresearch-style
+research harness for the ByteDance "Autonomous ML Research Agent for Recommender Systems"
+track. The benchmark is KuaiRand-Pure ranking: score each user's logged impressions by
+P(long_view), judged on mean(GAUC, nDCG@5), computed only through the organizer's own
+`evaluate.py`. The objective is to beat the official FM baseline (validation primary
+0.6016) using an agent that runs the full research loop autonomously, with a complete
+record of what it tried and why.
 
-Three zones (CLAUDE.md is the constitution):
-- **frozen**: `starter_kit/` (organizer files, byte-for-byte), `prepare.py` (data + metric +
-  submissions), `harness/` (the loop runner: git, watchdog, convergence, ledger), `tests/`.
-- **mutable** (the research agent's whole surface): `train.py` + `recsys/` (features, models,
-  losses, blending, eda).
-- **human-owned**: `program.md` (the agent's runtime instructions), docs, reports.
+## Result
+
+| | GAUC | nDCG@5 | primary |
+|---|---|---|---|
+| Official FM baseline (validation) | 0.6674 | 0.5357 | 0.6016 |
+| This repo, validation-best (blend) | 0.6751 | 0.5399 | 0.6075 |
+| Delta | +0.0077 | +0.0042 | +0.0059 |
+
+This represents a +0.0059 improvement over baseline on validation, roughly 7x the
+baseline's own seed-to-seed noise (σ = 0.0008), running entirely on CPU within a 300
+second training budget per run. The result comes from the first scored autonomous run
+(`aug30`): 5 iterations to convergence, with no human intervention.
+
+For reference, the score ladder runs from random guessing (0.4827), through item
+popularity (0.5807), to the official baseline (0.6016), to this repo's blend (0.6075).
+
+The full submission pack, including the Devpost writeup, iteration logs, results table,
+and final submission file, is available in [deliverables](deliverables/).
+
+## Architecture
+
+The repository is organized into three zones so the agent can experiment freely without
+being able to alter its own scoring rules (`CLAUDE.md` defines this contract):
+
+- **Frozen** — components the agent cannot modify: `starter_kit/` (the organizer's files,
+  kept byte-for-byte), `prepare.py` (data splits, metrics, submission writing), `harness/`
+  (git handling, watchdog, convergence check, run ledger), and the test suite.
+- **Mutable** — the agent's working surface: `train.py` and `recsys/` (features, models,
+  losses, blending, EDA). All experimentation happens here.
+- **Human-owned** — `program.md` (the agent's runtime instructions), plus supporting docs
+  and reports.
 
 ## Setup
 
@@ -50,34 +72,49 @@ uv run python -m harness finish                        # re-check final.csv, res
 uv run python -m harness report --run-id <tag>         # reports/<tag>/: tables, log, trajectory
 ```
 
-A scored run is kicked off with the message in IMPLEMENTATION.md Appendix C and nothing else;
-every later human message counts as a manual intervention (`python -m harness intervene`).
+A scored run is initiated using only the message specified in IMPLEMENTATION.md Appendix
+C. Any subsequent human message counts as a manual intervention (logged via `python -m
+harness intervene`), since the purpose of the run is to measure how far the agent gets
+on its own.
 
-Re-score a finished submission locally (validation only; test labels never enter memory):
+To re-score a finished submission locally (validation only; test labels never enter
+memory):
 
 ```bash
 PYTHONUTF8=1 uv run python starter_kit/submit.py --check --split test --data_dir data/raw submissions/<tag>/final.csv
 PYTHONUTF8=1 uv run python starter_kit/submit.py --score --split valid --data_dir data/raw <a valid-split csv>
 ```
 
-Model zoo baselines: `uv run python -m recsys.zoo bench --budget 300` (reports/zoo_baselines.md;
-current best rung: blend 0.6071 vs fm 0.6016 on validation). Dry-run rehearsal:
-`uv run python -m tests.scripted_agent.run --fixture small` (a scripted 9-step agent against the
-real harness in a temporary clone) or `--fixture full`.
+To view the model zoo's baseline numbers directly, run `uv run python -m recsys.zoo bench
+--budget 300` (writes to reports/zoo_baselines.md; the current best rung is the blend at
+0.6071 against FM's 0.6016). A dry-run rehearsal is also available via `uv run python -m
+tests.scripted_agent.run --fixture small` (or `--fixture full`), which runs a scripted
+9-step agent against the real harness in a throwaway clone, useful for validating the
+setup before a scored run.
 
-## Limitations / with more time
+## Limitations and future work
 
-- TODO: the within-user signal saturates ~0.606–0.607 for single 300 s models (see
-  reports/phase3.md); the largest untapped directions are positive-history attention
-  (DIN over long_view-only sequences) and cross-model distillation into one budget-fit model.
-- TODO: the 27k dataset loader samples users (`prepare.SAMPLE_27K_MOD`) and has not been run
-  end to end; 1k is wired and verified.
-- TODO: GPU is auto-detected but untested in this build (CPU-only machine); token accounting
-  relies on agent-side reporting (`finish --tokens-in/--tokens-out`).
-- TODO: LightGBM categorical handling warns about -1 fills (treated as NaN); worth a cleaner
-  encoding pass if lgbm becomes the kept model family.
+The within-user signal appears to cap out around 0.606–0.607 for any single model trained
+within the 300 second budget (see reports/phase3.md). The two most promising untested
+directions are attention over a user's long-view history (DIN-style) and distilling
+several models into one that still fits the time budget.
 
-## Team contributions
+KuaiRand-27k has a working loader, sampling users deterministically via
+`prepare.SAMPLE_27K_MOD`, but was not run end to end due to time constraints. KuaiRand-1k
+is fully wired and verified.
 
-Solo build (harness, features, zoo, tests, reports) on top of the organizer starter kit and
-the public KuaiRand dataset; see reports/decisions.md for every decision made along the way.
+GPU support is auto-detected in the code but untested, as the development machine was
+CPU-only. Token accounting also depends on the agent self-reporting its usage (`finish
+--tokens-in/--tokens-out`), so that figure should be treated as an estimate.
+
+LightGBM produces a recurring warning about filling missing categoricals with -1 (treated
+as NaN). This does not affect correctness but is worth a cleaner encoding pass if LightGBM
+becomes the retained model family.
+
+## Contributions
+
+This was a three-person team project, built on top of the organizer's starter kit and the public KuaiRand dataset.
+
+Rahul Mitra — harness and infrastructure (run loop, watchdog, convergence logic, git-based iteration tracking).
+Richel Felisha Salim — modeling and feature engineering (recsys/: features, model zoo, losses, blending).
+Cheah Wei Jun — evaluation, reporting, and deliverables (results tracking, iteration logs, Devpost writeup, documentation).
