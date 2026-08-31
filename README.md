@@ -115,6 +115,6 @@ becomes the retained model family.
 
 This was a three-person team project, built on top of the organizer's starter kit and the public KuaiRand dataset.
 
-Rahul Mitra — harness and infrastructure (run loop, watchdog, convergence logic, git-based iteration tracking).
-Richel Felisha Salim — modeling and feature engineering (recsys/: features, model zoo, losses, blending).
+Rahul Mitra — harness and infrastructure (run loop, watchdog, convergence logic, git-based iteration tracking).  
+Richel Felisha Salim — modeling and feature engineering (recsys/: features, model zoo, losses, blending).  
 Cheah Wei Jun — evaluation, reporting, and deliverables (results tracking, iteration logs, Devpost writeup, documentation).
